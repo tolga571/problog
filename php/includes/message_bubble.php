@@ -20,9 +20,7 @@ function render_message_bubble(array $message, string $currentUserId, ?array $pa
           <span class="msg-meta-time"><?= h(time_ago($message['created_at'])) ?></span>
         </div>
         <div class="flex items-center gap-1.5 <?= $isMine ? 'flex-row-reverse' : '' ?>">
-          <div class="msg-bubble <?= $isDeleted ? 'deleted' : '' ?>" data-raw-content="<?= h($rawContent) ?>">
-            <span class="msg-bubble-text"><?= $isDeleted ? 'Bu mesaj silindi' : nl2br(h($rawContent)) ?></span>
-          </div>
+          <div class="msg-bubble <?= $isDeleted ? 'deleted' : '' ?>" data-raw-content="<?= h($rawContent) ?>"><span class="msg-bubble-text"><?= $isDeleted ? 'Bu mesaj silindi' : nl2br(h($rawContent)) ?></span></div>
           <?php if ($isMine && !$isDeleted): ?>
             <div class="action-menu">
               <button type="button" class="action-menu-btn" title="Seçenekler" aria-label="Seçenekler">
