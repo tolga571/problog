@@ -67,11 +67,11 @@ try {
 }
 
 if ($media) {
-    db()->prepare("UPDATE posts SET title = ?, content = ?, image_path = ?, media_type = ?, updated_at = datetime('now') WHERE id = ?")
-        ->execute([$title, $content, $media['path'], $media['type'], $postId]);
+    db()->prepare('UPDATE posts SET title = ?, content = ?, image_path = ?, media_type = ?, updated_at = ? WHERE id = ?')
+        ->execute([$title, $content, $media['path'], $media['type'], now_utc(), $postId]);
 } else {
-    db()->prepare("UPDATE posts SET title = ?, content = ?, updated_at = datetime('now') WHERE id = ?")
-        ->execute([$title, $content, $postId]);
+    db()->prepare('UPDATE posts SET title = ?, content = ?, updated_at = ? WHERE id = ?')
+        ->execute([$title, $content, now_utc(), $postId]);
 }
 
 sync_post_tags($postId, $tagsInput);

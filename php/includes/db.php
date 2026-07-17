@@ -17,13 +17,45 @@ function db(bool $reset = false): ?PDO
         return $pdo;
     }
 
-    $isNew = !file_exists(DB_PATH);
+    $databaseUrl = env('DATABASE_URL');
 
-    $pdo = new PDO('sqlite:' . DB_PATH);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    $pdo->exec('PRAGMA journal_mode = WAL');
-    $pdo->exec('PRAGMA foreign_keys = ON');
+    if ($databaseUrl) {
+        $parts = parse_url($databaseUrl);
+        $query = [];
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $query);
+        }
+
+        $dsn = sprintf(
+            'pgsql:host=%s;port=%d;dbname=%s',
+            $parts['host'] ?? 'localhost',
+            $parts['port'] ?? 5432,
+            ltrim($parts['path'] ?? '', '/')
+        );
+        if (!empty($query['sslmode'])) {
+            $dsn .= ';sslmode=' . $query['sslmode'];
+        }
+
+        $pdo = new PDO(
+            $dsn,
+            isset($parts['user']) ? urldecode($parts['user']) : null,
+            isset($parts['pass']) ? urldecode($parts['pass']) : null,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+        $check = $pdo->query("SELECT to_regclass('public.users') AS t")->fetch();
+        $isNew = empty($check['t']);
+
+        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    } else {
+        $isNew = !file_exists(DB_PATH);
+
+        $pdo = new PDO('sqlite:' . DB_PATH);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->exec('PRAGMA journal_mode = WAL');
+        $pdo->exec('PRAGMA foreign_keys = ON');
+    }
 
     if ($isNew) {
         init_schema($pdo);
@@ -34,8 +66,38 @@ function db(bool $reset = false): ?PDO
     return $pdo;
 }
 
+function db_driver(PDO $pdo): string
+{
+    return $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+}
+
+function now_utc(): string
+{
+    return gmdate('Y-m-d H:i:s');
+}
+
+function adapt_schema_sql(string $sql, PDO $pdo): string
+{
+    if (db_driver($pdo) === 'pgsql') {
+        return str_replace(
+            "datetime('now')",
+            "to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')",
+            $sql
+        );
+    }
+    return $sql;
+}
+
 function column_exists(PDO $pdo, string $table, string $column): bool
 {
+    if (db_driver($pdo) === 'pgsql') {
+        $stmt = $pdo->prepare(
+            'SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ?'
+        );
+        $stmt->execute([$table, $column]);
+        return (bool) $stmt->fetch();
+    }
+
     $stmt = $pdo->query('PRAGMA table_info(' . $table . ')');
     foreach ($stmt->fetchAll() as $row) {
         if ($row['name'] === $column) {
@@ -77,7 +139,7 @@ function run_migrations(PDO $pdo): void
         $pdo->exec("ALTER TABLE users ADD COLUMN website TEXT DEFAULT ''");
     }
 
-    $pdo->exec('
+    $pdo->exec(adapt_schema_sql('
         CREATE TABLE IF NOT EXISTS bookmarks (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -89,13 +151,13 @@ function run_migrations(PDO $pdo): void
         );
         CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON bookmarks(user_id);
         CREATE INDEX IF NOT EXISTS idx_bookmarks_post_id ON bookmarks(post_id);
-    ');
+    ', $pdo));
 
     if (!column_exists($pdo, 'posts', 'post_type')) {
         $pdo->exec("ALTER TABLE posts ADD COLUMN post_type TEXT NOT NULL DEFAULT 'article'");
     }
 
-    $pdo->exec('
+    $pdo->exec(adapt_schema_sql('
         CREATE TABLE IF NOT EXISTS blocks (
             id TEXT PRIMARY KEY,
             blocker_id TEXT NOT NULL,
@@ -129,12 +191,12 @@ function run_migrations(PDO $pdo): void
             FOREIGN KEY (reported_id) REFERENCES users(id) ON DELETE CASCADE
         );
         CREATE INDEX IF NOT EXISTS idx_reports_reported_id ON reports(reported_id);
-    ');
+    ', $pdo));
 }
 
 function init_schema(PDO $pdo): void
 {
-    $pdo->exec('
+    $pdo->exec(adapt_schema_sql('
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -288,7 +350,7 @@ function init_schema(PDO $pdo): void
         CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
         CREATE INDEX IF NOT EXISTS idx_password_resets_user_id ON password_resets(user_id);
         CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
-    ');
+    ', $pdo));
 }
 
 function uuid(): string

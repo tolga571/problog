@@ -22,8 +22,8 @@ $stmt = $pdo->prepare(
 $stmt->execute([$user['id']]);
 $notifications = $stmt->fetchAll();
 
-$pdo->prepare('UPDATE notifications SET read_at = datetime(\'now\') WHERE user_id = ? AND read_at IS NULL')
-    ->execute([$user['id']]);
+$pdo->prepare('UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL')
+    ->execute([now_utc(), $user['id']]);
 
 function notification_text(array $n): string
 {

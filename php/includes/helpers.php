@@ -551,7 +551,7 @@ function sync_post_tags(string $postId, string $rawTags): void
             $pdo->prepare('INSERT INTO tags (id, name) VALUES (?, ?)')->execute([$tagId, $name]);
         }
 
-        $pdo->prepare('INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)')
+        $pdo->prepare('INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?) ON CONFLICT (post_id, tag_id) DO NOTHING')
             ->execute([$postId, $tagId]);
     }
 }

@@ -38,7 +38,7 @@ if (!$existing || $existing['sender_id'] !== $user['id'] || $existing['deleted_a
     json_response(['message' => 'Bu mesajı düzenleme yetkin yok.'], 403);
 }
 
-$pdo->prepare("UPDATE messages SET content = ?, edited_at = datetime('now') WHERE id = ?")
-    ->execute([$content, $messageId]);
+$pdo->prepare('UPDATE messages SET content = ?, edited_at = ? WHERE id = ?')
+    ->execute([$content, now_utc(), $messageId]);
 
 json_response(['content' => $content]);

@@ -17,8 +17,8 @@ function find_reset(PDO $pdo, string $token): ?array
         return null;
     }
     $tokenHash = hash('sha256', $token);
-    $stmt = $pdo->prepare("SELECT * FROM password_resets WHERE token_hash = ? AND expires_at > datetime('now')");
-    $stmt->execute([$tokenHash]);
+    $stmt = $pdo->prepare('SELECT * FROM password_resets WHERE token_hash = ? AND expires_at > ?');
+    $stmt->execute([$tokenHash, now_utc()]);
     $row = $stmt->fetch();
     return $row ?: null;
 }

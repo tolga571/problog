@@ -43,9 +43,9 @@ if ($withId !== '') {
         $activeMessages = $stmt->fetchAll();
 
         $pdo->prepare(
-            "UPDATE messages SET read_at = datetime('now')
-             WHERE conversation_id = ? AND sender_id != ? AND read_at IS NULL"
-        )->execute([$activeConversationId, $user['id']]);
+            'UPDATE messages SET read_at = ?
+             WHERE conversation_id = ? AND sender_id != ? AND read_at IS NULL'
+        )->execute([now_utc(), $activeConversationId, $user['id']]);
     }
 }
 

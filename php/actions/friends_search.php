@@ -21,7 +21,7 @@ if ($q === '' || count($ids) === 0) {
 
 $placeholders = implode(',', array_fill(0, count($ids), '?'));
 $stmt = db()->prepare(
-    "SELECT id, name, avatar_url FROM users WHERE id IN ($placeholders) AND name LIKE ? ORDER BY name LIMIT 10"
+    "SELECT id, name, avatar_url FROM users WHERE id IN ($placeholders) AND LOWER(name) LIKE LOWER(?) ORDER BY name LIMIT 10"
 );
 $stmt->execute([...$ids, '%' . $q . '%']);
 

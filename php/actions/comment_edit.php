@@ -38,8 +38,8 @@ if (!$existing || $existing['user_id'] !== $user['id']) {
     json_response(['message' => 'Bu yorumu düzenleme yetkin yok.'], 403);
 }
 
-$pdo->prepare("UPDATE comments SET content = ?, edited_at = datetime('now') WHERE id = ?")
-    ->execute([$content, $commentId]);
+$pdo->prepare('UPDATE comments SET content = ?, edited_at = ? WHERE id = ?')
+    ->execute([$content, now_utc(), $commentId]);
 
 // Düzenlenen içerikte yeni mention'lar da bildirim tetikler (mesaj
 // düzenlemede olduğu gibi, kaldırılan eski mention'lar için

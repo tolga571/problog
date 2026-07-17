@@ -14,7 +14,7 @@ $results = [];
 
 if ($q !== '') {
     $stmt = db()->prepare(
-        'SELECT id, name, bio, avatar_url FROM users WHERE name LIKE ? AND id != ? ORDER BY name LIMIT 20'
+        'SELECT id, name, bio, avatar_url FROM users WHERE LOWER(name) LIKE LOWER(?) AND id != ? ORDER BY name LIMIT 20'
     );
     $stmt->execute(['%' . $q . '%', $user['id']]);
     $results = $stmt->fetchAll();

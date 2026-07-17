@@ -40,8 +40,8 @@ $messageId = uuid();
 $pdo->prepare('INSERT INTO messages (id, conversation_id, sender_id, content) VALUES (?, ?, ?, ?)')
     ->execute([$messageId, $conversationId, $user['id'], $content]);
 
-$pdo->prepare("UPDATE conversations SET updated_at = datetime('now') WHERE id = ?")
-    ->execute([$conversationId]);
+$pdo->prepare('UPDATE conversations SET updated_at = ? WHERE id = ?')
+    ->execute([now_utc(), $conversationId]);
 
 create_notification($partnerId, $user['id'], 'message');
 

@@ -46,8 +46,8 @@ switch ($action) {
 
         if ($row && $row['sender_id'] === $targetId) {
             // Karşı taraf zaten istek göndermiş: kabul etmiş oluyoruz.
-            $pdo->prepare("UPDATE friend_requests SET status = 'accepted', responded_at = datetime('now') WHERE id = ?")
-                ->execute([$row['id']]);
+            $pdo->prepare("UPDATE friend_requests SET status = 'accepted', responded_at = ? WHERE id = ?")
+                ->execute([now_utc(), $row['id']]);
             create_notification($targetId, $user['id'], 'friend_accept');
             json_response(['status' => 'friends']);
         }
@@ -66,8 +66,8 @@ switch ($action) {
         if (!$row || $row['status'] !== 'pending' || $row['sender_id'] !== $targetId) {
             json_response(['message' => 'Bekleyen bir istek bulunamadı.'], 400);
         }
-        $pdo->prepare("UPDATE friend_requests SET status = 'accepted', responded_at = datetime('now') WHERE id = ?")
-            ->execute([$row['id']]);
+        $pdo->prepare("UPDATE friend_requests SET status = 'accepted', responded_at = ? WHERE id = ?")
+            ->execute([now_utc(), $row['id']]);
         create_notification($targetId, $user['id'], 'friend_accept');
         json_response(['status' => 'friends']);
         break;
