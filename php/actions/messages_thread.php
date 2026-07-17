@@ -48,7 +48,7 @@ if ($convRow) {
 }
 
 ob_start();
-render_message_thread($messages, $user['id']);
+render_message_thread($messages, $user['id'], $partner);
 $html = ob_get_clean();
 
 json_response([

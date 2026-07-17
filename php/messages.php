@@ -22,7 +22,7 @@ if ($withId !== '') {
         redirect('/messages.php');
     }
 
-    $stmt = $pdo->prepare('SELECT id, name, bio, avatar_url FROM users WHERE id = ?');
+    $stmt = $pdo->prepare('SELECT id, name, username, bio, avatar_url FROM users WHERE id = ?');
     $stmt->execute([$withId]);
     $activePartner = $stmt->fetch();
 
@@ -147,9 +147,17 @@ require __DIR__ . '/includes/layout_head.php';
             <a href="/messages.php" class="md:hidden p-1 hover:bg-surface-3 rounded-full transition-colors">
               <span class="material-symbols-outlined">arrow_back</span>
             </a>
-            <a href="/profile.php?id=<?= h($activePartner['id']) ?>" class="flex items-center gap-3 min-w-0">
-              <?= render_avatar($activePartner, 'avatar avatar-sm') ?>
-              <span class="font-semibold text-sm truncate"><?= h($activePartner['name']) ?></span>
+            <a href="/profile.php?id=<?= h($activePartner['id']) ?>" class="flex items-center gap-3 min-w-0 flex-1">
+              <?= render_avatar($activePartner) ?>
+              <span class="min-w-0">
+                <span class="font-semibold text-sm truncate block"><?= h($activePartner['name']) ?></span>
+                <?php if (!empty($activePartner['username'])): ?>
+                  <span class="text-muted-2 text-xs truncate block">@<?= h($activePartner['username']) ?></span>
+                <?php endif; ?>
+              </span>
+            </a>
+            <a href="/profile.php?id=<?= h($activePartner['id']) ?>" class="chat-widget-icon-btn" title="Profili gör" aria-label="Profili gör">
+              <span class="material-symbols-outlined">person</span>
             </a>
           </header>
 
@@ -158,7 +166,7 @@ require __DIR__ . '/includes/layout_head.php';
               <?php if (count($activeMessages) === 0): ?>
                 <p class="text-muted-2 text-sm text-center mt-8"><?= h($activePartner['name']) ?> ile sohbetin başlangıcı. İlk mesajı sen yaz!</p>
               <?php else: ?>
-                <?php render_message_thread($activeMessages, $user['id']); ?>
+                <?php render_message_thread($activeMessages, $user['id'], $activePartner); ?>
               <?php endif; ?>
             </div>
           </div>

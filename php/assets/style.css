@@ -48,36 +48,71 @@
   }
 }
 
-.msg-bubble-row {
+/* Flowbite chat-bubble kalibi: karsi tarafta avatar + isim/saat satiri,
+   kendi mesajlarinda sag hizali balon + "Gonderildi/Goruldu" durumu. */
+.msg-row {
   display: flex;
+  align-items: flex-start;
+  gap: 10px;
   width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: 10px;
 }
-.msg-bubble-row.mine {
+.msg-row.mine {
   justify-content: flex-end;
 }
+.msg-avatar { margin-top: 2px; }
+.msg-col {
+  display: flex;
+  flex-direction: column;
+  max-width: 76%;
+  min-width: 0;
+}
+.msg-row.mine .msg-col { align-items: flex-end; }
+.msg-row.theirs .msg-col { align-items: flex-start; }
+.msg-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+  padding: 0 4px;
+}
+.msg-meta-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+}
+.msg-meta-time {
+  font-size: 0.6875rem;
+  color: var(--color-muted-2);
+}
 .msg-bubble {
-  max-width: 72%;
-  padding: 9px 14px;
-  border-radius: 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
   font-size: 14.5px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 }
-.msg-bubble-row.mine .msg-bubble {
+.msg-row.mine .msg-bubble {
   background: var(--color-accent);
   color: #fff;
-  border-bottom-right-radius: 4px;
+  border-top-right-radius: 4px;
 }
-.msg-bubble-row.theirs .msg-bubble {
+.msg-row.theirs .msg-bubble {
   background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
   color: #fff;
-  border-bottom-left-radius: 4px;
+  border-top-left-radius: 4px;
 }
 .msg-bubble.deleted {
   font-style: italic;
   opacity: 0.6;
+}
+.msg-status {
+  font-size: 0.6875rem;
+  color: var(--color-muted-2);
+  margin-top: 3px;
+  padding: 0 4px;
 }
 
 /* Native form kontrollerini (checkbox/radio) tema ile uyumlu hale getir */
@@ -444,7 +479,15 @@ input[type="radio"] {
   padding: 12px 14px;
   border-bottom: 1px solid var(--color-border);
 }
-#chat-widget-title { font-weight: 700; font-size: 0.9375rem; color: #fff; }
+#chat-widget-title {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
 .chat-widget-icon-btn {
   flex-shrink: 0;
   color: var(--color-muted-2);
@@ -691,8 +734,8 @@ h1, h2, h3, .post-card h2, .prose-content h1, .prose-content h2, .prose-content 
               linear-gradient(#120f0d 0%, #1a1613 100%);
 }
 
-.msg-bubble-row.mine .msg-bubble { background: #c97a4a; }
-.msg-bubble-row.theirs .msg-bubble { background: #2a2520; }
+.msg-row.mine .msg-bubble { background: #c97a4a; }
+.msg-row.theirs .msg-bubble { background: #2a2520; }
 
 .comment-node .comment-children { border-color: #f5efe614; }
 .mention-dropdown { background: #211d19; border-color: #f5efe614; }

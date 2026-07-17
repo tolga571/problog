@@ -25,6 +25,11 @@ if (!$conversation || ($conversation['user_one_id'] !== $user['id'] && $conversa
     json_response(['message' => 'Bu sohbete erişimin yok.'], 403);
 }
 
+$partnerId = conversation_partner_id($conversation, $user['id']);
+$stmt = $pdo->prepare('SELECT id, name, avatar_url FROM users WHERE id = ?');
+$stmt->execute([$partnerId]);
+$partner = $stmt->fetch() ?: null;
+
 $seedDate = null;
 if ($afterId !== '') {
     $stmt = $pdo->prepare(
@@ -52,7 +57,7 @@ $pdo->prepare(
 )->execute([now_utc(), $conversationId, $user['id']]);
 
 ob_start();
-render_message_thread($messages, $user['id'], $seedDate);
+render_message_thread($messages, $user['id'], $partner, $seedDate);
 $html = ob_get_clean();
 
 json_response(['html' => $html, 'count' => count($messages)]);

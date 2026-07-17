@@ -947,12 +947,13 @@
   function buildMessageBubble(message, viewerId) {
     const isMine = message.sender_id === viewerId;
     const row = document.createElement('div');
-    row.className = 'msg-bubble-row ' + (isMine ? 'mine' : 'theirs');
+    row.className = 'msg-row ' + (isMine ? 'mine' : 'theirs');
     row.dataset.messageId = message.id;
     const safeContent = escapeHtml(message.content).replace(/\n/g, '<br>');
     row.innerHTML = `
-      <div class="flex flex-col" style="max-width:78%;align-items:${isMine ? 'flex-end' : 'flex-start'}">
-        <div class="flex items-center gap-1.5" style="${isMine ? 'flex-direction:row-reverse' : ''}">
+      <div class="msg-col">
+        <div class="msg-meta"><span class="msg-meta-time">Az önce</span></div>
+        <div class="flex items-center gap-1.5 ${isMine ? 'flex-row-reverse' : ''}">
           <div class="msg-bubble" data-raw-content="${escapeHtml(message.content)}"><span class="msg-bubble-text">${safeContent}</span></div>
           ${isMine ? `<div class="action-menu">
             <button type="button" class="action-menu-btn" title="Seçenekler" aria-label="Seçenekler"><span class="material-symbols-outlined text-base">more_horiz</span></button>
@@ -962,7 +963,7 @@
             </div>
           </div>` : ''}
         </div>
-        <p class="text-muted-2 text-xs mt-0.5" style="padding:0 4px">Az önce</p>
+        ${isMine ? '<p class="msg-status">Gönderildi</p>' : ''}
       </div>
     `;
     return row;
@@ -1227,7 +1228,12 @@
       activePartnerId = partner.id;
       backBtn.classList.remove('hidden');
       newBtn.classList.add('hidden');
-      titleEl.textContent = partner.name;
+      titleEl.innerHTML = `
+        ${partner.avatar_url
+          ? `<img src="${escapeHtml(partner.avatar_url)}" class="avatar avatar-sm" style="object-fit:cover" alt="" />`
+          : `<span class="avatar avatar-sm">${escapeHtml(initials(partner.name))}</span>`}
+        <span class="truncate">${escapeHtml(partner.name)}</span>
+      `;
       widgetBody.innerHTML = '<p class="chat-widget-empty">Yükleniyor...</p>';
       buildComposer();
 
