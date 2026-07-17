@@ -37,6 +37,7 @@ function render_message_bubble(array $message, string $currentUserId, ?array $pa
         </div>
         <?php if ($isMine && !$isDeleted): ?>
           <p class="msg-status">
+            <span class="material-symbols-outlined msg-status-icon <?= $message['read_at'] ? 'is-read' : '' ?>"><?= $message['read_at'] ? 'done_all' : 'done' ?></span>
             <?= $message['read_at'] ? 'Görüldü' : 'Gönderildi' ?><?php if (!empty($message['edited_at'])): ?> &middot; düzenlendi<?php endif; ?>
           </p>
         <?php elseif (!empty($message['edited_at']) && !$isDeleted): ?>

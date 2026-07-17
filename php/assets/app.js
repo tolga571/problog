@@ -963,7 +963,7 @@
             </div>
           </div>` : ''}
         </div>
-        ${isMine ? '<p class="msg-status">Gönderildi</p>' : ''}
+        ${isMine ? '<p class="msg-status"><span class="material-symbols-outlined msg-status-icon">done</span>Gönderildi</p>' : ''}
       </div>
     `;
     return row;
