@@ -9,9 +9,7 @@
     </a>
     <a href="/messages.php" class="relative flex flex-col items-center <?= ($activePage ?? '') === 'messages' ? 'text-accent' : 'text-muted' ?>">
       <span class="material-symbols-outlined">chat_bubble</span>
-      <?php if (!empty($unreadMsgCount)): ?>
-        <span class="absolute bg-accent rounded-full" style="width:8px;height:8px;top:-2px;right:6px"></span>
-      <?php endif; ?>
+      <span class="absolute bg-accent rounded-full <?= !empty($unreadMsgCount) ? '' : 'hidden' ?>" style="width:8px;height:8px;top:-2px;right:6px" data-nav-messages-badge-dot></span>
     </a>
     <a href="/notifications.php" class="relative flex flex-col items-center <?= ($activePage ?? '') === 'notifications' ? 'text-accent' : 'text-muted' ?>">
       <span class="material-symbols-outlined">notifications</span>
@@ -50,6 +48,33 @@
       <div id="share-chat-body"></div>
     </div>
   </div>
+
+  <?php if (($activePage ?? '') !== 'messages'): ?>
+    <div id="chat-widget">
+      <button type="button" id="chat-widget-fab" aria-label="Mesajlar">
+        <span class="material-symbols-outlined">chat_bubble</span>
+        <span id="chat-widget-fab-badge" class="chat-widget-badge <?= empty($unreadMsgCount) ? 'hidden' : '' ?>"><?= (int) ($unreadMsgCount ?? 0) ?></span>
+      </button>
+      <div id="chat-widget-panel" class="hidden">
+        <div id="chat-widget-header">
+          <button type="button" id="chat-widget-back" class="chat-widget-icon-btn hidden" aria-label="Geri">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div class="flex-1 min-w-0">
+            <span id="chat-widget-title">Mesajlar</span>
+          </div>
+          <button type="button" id="chat-widget-new" class="chat-widget-icon-btn" title="Yeni sohbet" aria-label="Yeni sohbet">
+            <span class="material-symbols-outlined">edit_square</span>
+          </button>
+          <button type="button" id="chat-widget-close" class="chat-widget-icon-btn" aria-label="Kapat">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div id="chat-widget-body"></div>
+        <div id="chat-widget-footer" class="hidden"></div>
+      </div>
+    </div>
+  <?php endif; ?>
 <?php endif; ?>
 <script src="/assets/app.js?v=<?= filemtime(__DIR__ . '/../assets/app.js') ?>"></script>
 </body>

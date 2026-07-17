@@ -43,8 +43,6 @@ $pdo->prepare('INSERT INTO messages (id, conversation_id, sender_id, content) VA
 $pdo->prepare('UPDATE conversations SET updated_at = ? WHERE id = ?')
     ->execute([now_utc(), $conversationId]);
 
-create_notification($partnerId, $user['id'], 'message');
-
 $stmt = $pdo->prepare('SELECT * FROM messages WHERE id = ?');
 $stmt->execute([$messageId]);
 $message = $stmt->fetch();

@@ -25,6 +25,7 @@ if (!$conversation || ($conversation['user_one_id'] !== $user['id'] && $conversa
     json_response(['message' => 'Bu sohbete erişimin yok.'], 403);
 }
 
+$seedDate = null;
 if ($afterId !== '') {
     $stmt = $pdo->prepare(
         "SELECT * FROM messages
@@ -34,6 +35,11 @@ if ($afterId !== '') {
          ORDER BY created_at ASC"
     );
     $stmt->execute([$conversationId, $afterId, $afterId]);
+
+    $stmt2 = $pdo->prepare('SELECT created_at FROM messages WHERE id = ?');
+    $stmt2->execute([$afterId]);
+    $seedRow = $stmt2->fetch();
+    $seedDate = $seedRow['created_at'] ?? null;
 } else {
     $stmt = $pdo->prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC');
     $stmt->execute([$conversationId]);
@@ -46,9 +52,7 @@ $pdo->prepare(
 )->execute([now_utc(), $conversationId, $user['id']]);
 
 ob_start();
-foreach ($messages as $m) {
-    render_message_bubble($m, $user['id']);
-}
+render_message_thread($messages, $user['id'], $seedDate);
 $html = ob_get_clean();
 
 json_response(['html' => $html, 'count' => count($messages)]);

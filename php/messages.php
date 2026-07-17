@@ -94,6 +94,15 @@ require __DIR__ . '/includes/layout_head.php';
           </div>
         <?php endif; ?>
 
+        <?php if (count($conversations) > 0): ?>
+          <div class="px-4 py-3 border-b border-border">
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 text-lg">search</span>
+              <input type="text" id="conversation-search" class="input-field pl-10 text-sm" placeholder="Sohbetlerde ara..." autocomplete="off" />
+            </div>
+          </div>
+        <?php endif; ?>
+
         <?php if (count($conversations) === 0): ?>
           <div class="p-5 text-center">
             <span class="material-symbols-outlined text-4xl text-muted-2 mb-4">forum</span>
@@ -110,7 +119,8 @@ require __DIR__ . '/includes/layout_head.php';
               $preview = $conv['last_deleted_at'] ? 'Bu mesaj silindi' : (string) ($conv['last_content'] ?? '');
             ?>
             <a href="/messages.php?with=<?= h($conv['partner']['id']) ?>"
-               class="flex items-center gap-3 px-4 py-3.5 border-b border-border hover:bg-surface-3 transition-colors <?= $isActive ? 'bg-surface-3' : '' ?>">
+               class="conversation-row flex items-center gap-3 px-4 py-3.5 border-b border-border hover:bg-surface-3 transition-colors <?= $isActive ? 'bg-surface-3' : '' ?>"
+               data-name="<?= h(mb_strtolower($conv['partner']['name'])) ?>">
               <?= render_avatar($conv['partner']) ?>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between gap-2">
@@ -148,16 +158,14 @@ require __DIR__ . '/includes/layout_head.php';
               <?php if (count($activeMessages) === 0): ?>
                 <p class="text-muted-2 text-sm text-center mt-8"><?= h($activePartner['name']) ?> ile sohbetin başlangıcı. İlk mesajı sen yaz!</p>
               <?php else: ?>
-                <?php foreach ($activeMessages as $m): ?>
-                  <?php render_message_bubble($m, $user['id']); ?>
-                <?php endforeach; ?>
+                <?php render_message_thread($activeMessages, $user['id']); ?>
               <?php endif; ?>
             </div>
           </div>
 
-          <form id="message-form" class="flex items-center gap-3 px-4 py-3 border-t border-border flex-shrink-0">
-            <input type="text" name="content" class="input-field text-sm flex-1" placeholder="Bir mesaj yaz..." maxlength="2000" autocomplete="off" required />
-            <button type="submit" class="btn-primary px-4 py-3 flex-shrink-0" title="Gönder" aria-label="Gönder">
+          <form id="message-form" class="chat-composer px-4 py-3 border-t border-border flex-shrink-0">
+            <input type="text" name="content" class="chat-composer-input" placeholder="Bir mesaj yaz..." maxlength="2000" autocomplete="off" required />
+            <button type="submit" class="chat-composer-send" title="Gönder" aria-label="Gönder">
               <span class="material-symbols-outlined text-lg">send</span>
             </button>
           </form>

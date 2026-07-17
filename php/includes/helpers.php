@@ -280,6 +280,14 @@ function format_birthdate(string $date): string
     return "{$day} {$month} {$year}";
 }
 
+function is_new_day(?string $prevCreatedAt, string $currentCreatedAt): bool
+{
+    if ($prevCreatedAt === null) {
+        return true;
+    }
+    return substr($prevCreatedAt, 0, 10) !== substr($currentCreatedAt, 0, 10);
+}
+
 function normalize_website(string $url): string
 {
     $url = trim($url);
@@ -389,7 +397,7 @@ function create_notification(string $userId, string $actorId, string $type, ?str
 
 function unread_notifications_count(string $userId): int
 {
-    $stmt = db()->prepare('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL');
+    $stmt = db()->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND read_at IS NULL AND type != 'message'");
     $stmt->execute([$userId]);
     return (int) $stmt->fetchColumn();
 }
@@ -626,6 +634,24 @@ function initials(string $name): string
         }
     }
     return mb_strtoupper($letters, 'UTF-8');
+}
+
+function comment_like_state(string $commentId, ?string $currentUserId): array
+{
+    $pdo = db();
+
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM comment_likes WHERE comment_id = ?');
+    $stmt->execute([$commentId]);
+    $likesCount = (int) $stmt->fetchColumn();
+
+    $userLiked = false;
+    if ($currentUserId) {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND user_id = ?');
+        $stmt->execute([$commentId, $currentUserId]);
+        $userLiked = ((int) $stmt->fetchColumn()) > 0;
+    }
+
+    return ['likes_count' => $likesCount, 'user_liked' => $userLiked];
 }
 
 function post_with_details(array $post, ?string $currentUserId): array

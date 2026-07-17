@@ -61,9 +61,7 @@ $useMarkdownEditor = $useMarkdownEditor ?? false;
         <a href="/messages.php" class="sidebar-link <?= ($activePage ?? '') === 'messages' ? 'active' : '' ?>">
           <span class="material-symbols-outlined nav-icon">chat_bubble</span>
           <span class="flex-1">Mesajlar</span>
-          <?php if ($unreadMsgCount > 0): ?>
-            <span class="bg-accent text-white text-xs font-semibold rounded-full" style="padding:2px 8px"><?= $unreadMsgCount ?></span>
-          <?php endif; ?>
+          <span class="bg-accent text-white text-xs font-semibold rounded-full <?= $unreadMsgCount > 0 ? '' : 'hidden' ?>" style="padding:2px 8px" data-nav-messages-badge-count><?= $unreadMsgCount ?></span>
         </a>
         <a href="/notifications.php" class="sidebar-link <?= ($activePage ?? '') === 'notifications' ? 'active' : '' ?>">
           <span class="material-symbols-outlined nav-icon">notifications</span>

@@ -243,6 +243,22 @@
       return;
     }
 
+    const commentLikeBtn = event.target.closest('.comment-like-btn');
+    if (commentLikeBtn) {
+      if (commentLikeBtn.disabled) return;
+      const node = commentLikeBtn.closest('.comment-node');
+      try {
+        const data = await postJson('/actions/comment_like.php', { comment_id: node.dataset.commentId });
+        commentLikeBtn.dataset.liked = data.liked ? '1' : '0';
+        commentLikeBtn.classList.toggle('text-accent', data.liked);
+        commentLikeBtn.querySelector('.like-icon').textContent = data.liked ? 'favorite' : 'favorite_border';
+        commentLikeBtn.querySelector('.like-count').textContent = data.likes_count;
+      } catch (err) {
+        console.error('Yorum beğeni hatası:', err);
+      }
+      return;
+    }
+
     const bookmarkBtn = event.target.closest('.bookmark-btn');
     if (bookmarkBtn) {
       if (bookmarkBtn.disabled) return;
@@ -790,6 +806,10 @@
           </div>
           <p class="text-muted text-sm mt-0.5 leading-tight comment-content-text">${comment.content_html}</p>
           <div class="flex items-center gap-4" style="margin-top:6px">
+            <button type="button" class="comment-like-btn ${comment.user_liked ? 'text-accent' : ''}" data-liked="${comment.user_liked ? '1' : '0'}" title="Beğen" aria-label="Beğen" ${currentUserId ? '' : 'disabled'}>
+              <span class="material-symbols-outlined text-sm like-icon">${comment.user_liked ? 'favorite' : 'favorite_border'}</span>
+              <span class="like-count">${comment.likes_count || 0}</span>
+            </button>
             ${currentUserId ? '<button type="button" class="comment-reply-btn"><span class="material-symbols-outlined text-sm">reply</span>Yanıtla</button>' : ''}
           </div>
           <div class="comment-reply-form-slot"></div>
@@ -1014,5 +1034,238 @@
         }
       });
     }
+  }
+
+  const conversationSearch = document.getElementById('conversation-search');
+  if (conversationSearch) {
+    conversationSearch.addEventListener('input', () => {
+      const query = conversationSearch.value.trim().toLowerCase();
+      document.querySelectorAll('.conversation-row').forEach((row) => {
+        row.style.display = row.dataset.name.includes(query) ? '' : 'none';
+      });
+    });
+  }
+
+  // Sag-alt kose canli sohbet widget'i - her sayfada (mesajlar sayfasi
+  // haric, layout_foot.php orada zaten render etmiyor) tek panelli
+  // liste/thread gecisli mini sohbet penceresi.
+  const chatWidget = document.getElementById('chat-widget');
+  if (chatWidget) {
+    const fab = document.getElementById('chat-widget-fab');
+    const fabBadge = document.getElementById('chat-widget-fab-badge');
+    const panel = document.getElementById('chat-widget-panel');
+    const backBtn = document.getElementById('chat-widget-back');
+    const newBtn = document.getElementById('chat-widget-new');
+    const closeBtn = document.getElementById('chat-widget-close');
+    const titleEl = document.getElementById('chat-widget-title');
+    const widgetBody = document.getElementById('chat-widget-body');
+    const footer = document.getElementById('chat-widget-footer');
+
+    let view = 'closed';
+    let activeConversationId = '';
+    let activePartnerId = '';
+    let threadPollTimer = null;
+
+    function setUnreadBadge(count) {
+      fabBadge.textContent = count;
+      fabBadge.classList.toggle('hidden', count <= 0);
+      document.querySelectorAll('[data-nav-messages-badge-count]').forEach((el) => {
+        el.textContent = count;
+        el.classList.toggle('hidden', count <= 0);
+      });
+      document.querySelectorAll('[data-nav-messages-badge-dot]').forEach((el) => {
+        el.classList.toggle('hidden', count <= 0);
+      });
+    }
+
+    function stopThreadPoll() {
+      if (threadPollTimer) { clearInterval(threadPollTimer); threadPollTimer = null; }
+    }
+
+    function lastWidgetMessageId() {
+      const rows = widgetBody.querySelectorAll('[data-message-id]');
+      return rows.length ? rows[rows.length - 1].dataset.messageId : '';
+    }
+
+    function scrollWidgetToBottom() {
+      widgetBody.scrollTop = widgetBody.scrollHeight;
+    }
+
+    async function showList() {
+      stopThreadPoll();
+      view = 'list';
+      activeConversationId = '';
+      activePartnerId = '';
+      backBtn.classList.add('hidden');
+      newBtn.classList.remove('hidden');
+      footer.classList.add('hidden');
+      footer.innerHTML = '';
+      titleEl.textContent = 'Mesajlar';
+      widgetBody.innerHTML = '<p class="chat-widget-empty">Yükleniyor...</p>';
+      try {
+        const data = await getJson('/actions/conversations_list.php');
+        setUnreadBadge(data.unread_total);
+        if (!data.conversations.length) {
+          widgetBody.innerHTML = '<p class="chat-widget-empty">Henüz bir sohbetin yok.</p>';
+          return;
+        }
+        widgetBody.innerHTML = '';
+        data.conversations.forEach((conv) => {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'chat-widget-conv-row';
+          row.innerHTML = `
+            ${conv.partner.avatar_url
+              ? `<img src="${escapeHtml(conv.partner.avatar_url)}" class="avatar avatar-sm" style="object-fit:cover" alt="" />`
+              : `<div class="avatar avatar-sm">${escapeHtml(initials(conv.partner.name))}</div>`}
+            <div class="flex-1 min-w-0">
+              <p class="chat-widget-conv-name truncate">${escapeHtml(conv.partner.name)}</p>
+              <p class="chat-widget-conv-preview truncate">${escapeHtml(conv.preview || '')}</p>
+            </div>
+            <div class="chat-widget-conv-meta">
+              <span class="chat-widget-conv-time">${escapeHtml(conv.time_ago || '')}</span>
+              ${conv.unread_count > 0 ? `<span class="bg-accent text-white text-xs font-semibold rounded-full" style="padding:1px 7px">${conv.unread_count}</span>` : ''}
+            </div>
+          `;
+          row.addEventListener('click', () => openThread(conv.partner));
+          widgetBody.appendChild(row);
+        });
+      } catch (err) {
+        widgetBody.innerHTML = '<p class="chat-widget-empty">Sohbetler yüklenemedi.</p>';
+        console.error('Sohbet listesi hatası (widget):', err);
+      }
+    }
+
+    async function showFriendPicker() {
+      stopThreadPoll();
+      view = 'new';
+      backBtn.classList.remove('hidden');
+      newBtn.classList.add('hidden');
+      footer.classList.add('hidden');
+      titleEl.textContent = 'Yeni sohbet';
+      widgetBody.innerHTML = '<p class="chat-widget-empty">Arkadaşların yükleniyor...</p>';
+      try {
+        const data = await getJson('/actions/friends_list.php');
+        if (!data.friends.length) {
+          widgetBody.innerHTML = '<p class="chat-widget-empty">Mesajlaşmak için önce bir arkadaş eklemelisin.</p>';
+          return;
+        }
+        widgetBody.innerHTML = '';
+        data.friends.forEach((friend) => {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'chat-widget-conv-row';
+          row.innerHTML = `
+            ${friend.avatar_url
+              ? `<img src="${escapeHtml(friend.avatar_url)}" class="avatar avatar-sm" style="object-fit:cover" alt="" />`
+              : `<div class="avatar avatar-sm">${escapeHtml(initials(friend.name))}</div>`}
+            <span class="chat-widget-conv-name">${escapeHtml(friend.name)}</span>
+          `;
+          row.addEventListener('click', () => openThread(friend));
+          widgetBody.appendChild(row);
+        });
+      } catch (err) {
+        widgetBody.innerHTML = '<p class="chat-widget-empty">Arkadaş listesi yüklenemedi.</p>';
+        console.error('Arkadaş listesi hatası (widget):', err);
+      }
+    }
+
+    function buildComposer() {
+      footer.innerHTML = `
+        <form class="chat-composer" id="chat-widget-form">
+          <input type="text" class="chat-composer-input" name="content" placeholder="Bir mesaj yaz..." maxlength="2000" autocomplete="off" required />
+          <button type="submit" class="chat-composer-send" aria-label="Gönder">
+            <span class="material-symbols-outlined text-lg">send</span>
+          </button>
+        </form>
+      `;
+      footer.classList.remove('hidden');
+      const form = footer.querySelector('form');
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const input = form.querySelector('input');
+        const content = input.value.trim();
+        if (!content || !activePartnerId) return;
+        try {
+          const data = await postJson('/actions/message_send.php', { partner_id: activePartnerId, content });
+          activeConversationId = data.conversation_id;
+          const emptyState = widgetBody.querySelector('.chat-widget-empty');
+          if (emptyState) widgetBody.innerHTML = '';
+          widgetBody.appendChild(buildMessageBubble(data.sent_message, currentUserId));
+          input.value = '';
+          scrollWidgetToBottom();
+        } catch (err) {
+          console.error('Mesaj gönderme hatası (widget):', err);
+        }
+      });
+    }
+
+    async function openThread(partner) {
+      stopThreadPoll();
+      view = 'thread';
+      activePartnerId = partner.id;
+      backBtn.classList.remove('hidden');
+      newBtn.classList.add('hidden');
+      titleEl.textContent = partner.name;
+      widgetBody.innerHTML = '<p class="chat-widget-empty">Yükleniyor...</p>';
+      buildComposer();
+
+      try {
+        const data = await getJson(`/actions/messages_thread.php?with=${encodeURIComponent(partner.id)}`);
+        activeConversationId = data.conversation_id || '';
+        widgetBody.innerHTML = data.count > 0
+          ? data.html
+          : `<p class="chat-widget-empty">${escapeHtml(partner.name)} ile sohbetin başlangıcı. İlk mesajı sen yaz!</p>`;
+        scrollWidgetToBottom();
+
+        threadPollTimer = setInterval(async () => {
+          if (!activeConversationId) return;
+          try {
+            const poll = await getJson(
+              `/actions/messages_poll.php?conversation_id=${encodeURIComponent(activeConversationId)}&after_id=${encodeURIComponent(lastWidgetMessageId())}`
+            );
+            if (poll.count > 0) {
+              const temp = document.createElement('div');
+              temp.innerHTML = poll.html;
+              [...temp.children].forEach((node) => {
+                if (!widgetBody.querySelector(`[data-message-id="${node.dataset.messageId}"]`)) {
+                  widgetBody.appendChild(node);
+                }
+              });
+              scrollWidgetToBottom();
+            }
+          } catch (err) {
+            // sessizce gec, bir sonraki denemede tekrar dene
+          }
+        }, 4000);
+      } catch (err) {
+        widgetBody.innerHTML = '<p class="chat-widget-empty">Sohbet yüklenemedi.</p>';
+        console.error('Sohbet yükleme hatası (widget):', err);
+      }
+    }
+
+    fab.addEventListener('click', () => {
+      chatWidget.classList.add('open');
+      panel.classList.remove('hidden');
+      showList();
+    });
+    closeBtn.addEventListener('click', () => {
+      chatWidget.classList.remove('open');
+      panel.classList.add('hidden');
+      stopThreadPoll();
+      view = 'closed';
+    });
+    backBtn.addEventListener('click', showList);
+    newBtn.addEventListener('click', showFriendPicker);
+
+    async function refreshUnreadBadge() {
+      try {
+        const data = await getJson('/actions/conversations_list.php');
+        setUnreadBadge(data.unread_total);
+      } catch (err) {
+        // sessizce gec
+      }
+    }
+    setInterval(refreshUnreadBadge, 15000);
   }
 })();

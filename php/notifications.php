@@ -11,18 +11,18 @@ $user = require_login();
 $pdo = db();
 
 $stmt = $pdo->prepare(
-    'SELECT n.*, u.name AS actor_name, u.avatar_url AS actor_avatar_url, p.title AS post_title, p.author_id AS post_author_id
+    "SELECT n.*, u.name AS actor_name, u.avatar_url AS actor_avatar_url, p.title AS post_title, p.author_id AS post_author_id
      FROM notifications n
      JOIN users u ON u.id = n.actor_id
      LEFT JOIN posts p ON p.id = n.post_id
-     WHERE n.user_id = ?
+     WHERE n.user_id = ? AND n.type != 'message'
      ORDER BY n.created_at DESC
-     LIMIT 50'
+     LIMIT 50"
 );
 $stmt->execute([$user['id']]);
 $notifications = $stmt->fetchAll();
 
-$pdo->prepare('UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL')
+$pdo->prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL AND type != 'message'")
     ->execute([now_utc(), $user['id']]);
 
 function notification_text(array $n): string
@@ -31,6 +31,8 @@ function notification_text(array $n): string
     switch ($n['type']) {
         case 'like':
             return $actor . ' gönderini beğendi: ' . h($n['post_title'] ?? '');
+        case 'comment_like':
+            return $actor . ' yorumunu beğendi: ' . h($n['post_title'] ?? '');
         case 'comment':
             return $actor . ' gönderine yorum yaptı: ' . h($n['post_title'] ?? '');
         case 'comment_reply':
@@ -54,6 +56,7 @@ function notification_icon(array $n): string
 {
     return match ($n['type']) {
         'like' => 'favorite',
+        'comment_like' => 'favorite',
         'comment' => 'chat_bubble',
         'comment_reply' => 'reply',
         'mention' => 'alternate_email',
@@ -66,7 +69,7 @@ function notification_icon(array $n): string
 
 function notification_badge_class(array $n): string
 {
-    return $n['type'] === 'like' ? 'notif-badge-like' : 'notif-badge-accent';
+    return in_array($n['type'], ['like', 'comment_like'], true) ? 'notif-badge-like' : 'notif-badge-accent';
 }
 
 function notification_link(array $n, string $ownerId): string

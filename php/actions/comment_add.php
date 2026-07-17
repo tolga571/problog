@@ -83,6 +83,7 @@ $comment = $stmt->fetch();
 $comment['content_html'] = render_comment_content($comment['content']);
 $comment['time_ago'] = time_ago($comment['created_at']);
 $comment['full_date'] = format_date($comment['created_at']);
+$comment = array_merge($comment, comment_like_state($comment['id'], $user['id']));
 
 $stmt = $pdo->prepare('SELECT COUNT(*) FROM comments WHERE post_id = ?');
 $stmt->execute([$postId]);

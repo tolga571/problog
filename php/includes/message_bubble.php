@@ -33,3 +33,15 @@ function render_message_bubble(array $message, string $currentUserId): void
     </div>
     <?php
 }
+
+function render_message_thread(array $messages, string $currentUserId, ?string $seedDate = null): void
+{
+    $prevDate = $seedDate;
+    foreach ($messages as $message) {
+        if (is_new_day($prevDate, $message['created_at'])) {
+            echo '<div class="chat-date-separator">' . h(format_birthdate($message['created_at'])) . '</div>';
+        }
+        $prevDate = $message['created_at'];
+        render_message_bubble($message, $currentUserId);
+    }
+}
