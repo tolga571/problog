@@ -38,6 +38,18 @@
       </div>
     </div>
   </div>
+
+  <div id="share-chat-modal" class="confirm-modal-overlay hidden">
+    <div class="share-chat-card" role="dialog" aria-modal="true" aria-labelledby="share-chat-title">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="confirm-modal-title" id="share-chat-title" style="margin-bottom:0">Sohbetle gönder</h3>
+        <button type="button" class="p-1 hover:bg-surface-3 rounded-full transition-colors" id="share-chat-close" aria-label="Kapat">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div id="share-chat-body"></div>
+    </div>
+  </div>
 <?php endif; ?>
 <script src="/assets/app.js?v=<?= filemtime(__DIR__ . '/../assets/app.js') ?>"></script>
 </body>

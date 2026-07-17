@@ -308,6 +308,56 @@ input[type="radio"] {
 .action-menu-dropdown .report-btn:hover { color: var(--color-red-400); }
 .action-menu-dropdown form { display: block; }
 
+/* Ikon + etiket satirlarindan olusan menuler (paylas, vb.) - metin-only
+   action-menu-dropdown'un genisletilmis hali. */
+.action-menu-dropdown-icons { min-width: 210px; right: 0; }
+.action-menu-dropdown-icons button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+}
+.action-menu-dropdown-icons .material-symbols-outlined {
+  font-size: 20px;
+  color: var(--color-muted-2);
+  flex-shrink: 0;
+}
+.action-menu-dropdown-icons button:hover .material-symbols-outlined { color: #fff; }
+
+/* Sohbetle gonder modali - confirm-modal ile ayni gorsel dil, farkli icerik */
+.share-chat-card {
+  width: 100%;
+  max-width: 380px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  animation: confirmModalPopIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.share-chat-friend-list {
+  overflow-y: auto;
+  margin: 0 -8px;
+}
+.share-chat-friend-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 8px;
+  border-radius: 12px;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+.share-chat-friend-btn:hover { background: var(--color-surface-3); }
+.share-chat-friend-btn:disabled { opacity: 0.6; pointer-events: none; }
+.share-chat-friend-name { font-size: 0.875rem; font-weight: 600; color: #fff; flex: 1; min-width: 0; }
+.share-chat-status { font-size: 0.75rem; color: var(--color-accent); flex-shrink: 0; }
+.share-chat-empty { color: var(--color-muted); font-size: 0.875rem; text-align: center; padding: 24px 8px; }
+
 /* @mention autocomplete dropdown */
 .mention-dropdown {
   position: absolute;

@@ -81,20 +81,38 @@ function render_post_card(array $post, ?string $currentUserId): void
           <button
             class="post-interact-btn like-btn <?= $post['user_liked'] ? 'text-accent' : '' ?>"
             data-liked="<?= $post['user_liked'] ? '1' : '0' ?>"
+            title="Beğen"
+            aria-label="Beğen"
             <?= $currentUserId ? '' : 'disabled' ?>
           >
             <span class="material-symbols-outlined text-xl like-icon"><?= $post['user_liked'] ? 'favorite' : 'favorite_border' ?></span>
             <span class="like-count"><?= (int) $post['likes_count'] ?></span>
           </button>
-          <button class="post-interact-btn comment-toggle-btn">
+          <button class="post-interact-btn comment-toggle-btn" title="Yorum yap" aria-label="Yorum yap">
             <span class="material-symbols-outlined text-xl">chat_bubble</span>
             <span class="comment-count"><?= (int) $post['comments_count'] ?></span>
           </button>
         </div>
         <div class="flex items-center gap-4">
-          <button type="button" class="post-interact-btn share-btn" title="Paylaş" aria-label="Paylaş">
-            <span class="material-symbols-outlined text-xl">ios_share</span>
-          </button>
+          <div class="action-menu">
+            <button type="button" class="post-interact-btn action-menu-btn share-menu-btn" title="Paylaş" aria-label="Paylaş">
+              <span class="material-symbols-outlined text-xl">ios_share</span>
+            </button>
+            <div class="action-menu-dropdown action-menu-dropdown-icons hidden">
+              <button type="button" class="share-chat-btn">
+                <span class="material-symbols-outlined text-base">forum</span>
+                Sohbetle gönder
+              </button>
+              <button type="button" class="share-copy-btn">
+                <span class="material-symbols-outlined text-base">link</span>
+                Bağlantıyı kopyala
+              </button>
+              <button type="button" class="share-native-btn" hidden>
+                <span class="material-symbols-outlined text-base">ios_share</span>
+                Diğer uygulamalarla paylaş
+              </button>
+            </div>
+          </div>
           <button
             type="button"
             class="post-interact-btn bookmark-btn <?= $post['user_bookmarked'] ? 'text-accent' : '' ?>"

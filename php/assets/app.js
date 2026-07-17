@@ -148,6 +148,83 @@
     return data;
   }
 
+  // Paylas menusundeki "Diger uygulamalarla paylas" secenegi, sadece
+  // tarayici gercekten native share sheet destekliyorsa gosterilir.
+  if (navigator.share) {
+    document.querySelectorAll('.share-native-btn').forEach((btn) => { btn.hidden = false; });
+  }
+
+  function postShareUrl(card) {
+    return `${window.location.origin}/profile.php?id=${encodeURIComponent(card.dataset.authorId)}#post-${encodeURIComponent(card.dataset.postId)}`;
+  }
+
+  function openShareChatModal(card) {
+    const modal = document.getElementById('share-chat-modal');
+    const body = document.getElementById('share-chat-body');
+    if (!modal || !body) return;
+
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      document.removeEventListener('keydown', onKeydown);
+    };
+    function onKeydown(event) { if (event.key === 'Escape') closeModal(); }
+
+    modal.classList.remove('hidden');
+    body.innerHTML = '<p class="share-chat-empty">Arkadaşların yükleniyor...</p>';
+
+    modal.querySelector('#share-chat-close').onclick = closeModal;
+    modal.onclick = (event) => { if (event.target === modal) closeModal(); };
+    document.addEventListener('keydown', onKeydown);
+
+    getJson('/actions/friends_list.php')
+      .then((data) => {
+        if (!data.friends.length) {
+          body.innerHTML = `
+            <p class="share-chat-empty">Henüz arkadaşın yok. Mesajla paylaşmak için önce birini arkadaş eklemelisin.</p>
+          `;
+          return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'share-chat-friend-list';
+        data.friends.forEach((friend) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'share-chat-friend-btn';
+          btn.innerHTML = `
+            ${friend.avatar_url
+              ? `<img src="${escapeHtml(friend.avatar_url)}" class="avatar avatar-sm" style="object-fit:cover" alt="" />`
+              : `<div class="avatar avatar-sm">${escapeHtml(initials(friend.name))}</div>`}
+            <span class="share-chat-friend-name">${escapeHtml(friend.name)}</span>
+            <span class="share-chat-status"></span>
+          `;
+          btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            const status = btn.querySelector('.share-chat-status');
+            status.textContent = 'Gönderiliyor...';
+            const title = card.dataset.postTitle;
+            const content = `${title ? title + '\n' : ''}${postShareUrl(card)}`;
+            try {
+              await postJson('/actions/message_send.php', { partner_id: friend.id, content });
+              status.textContent = 'Gönderildi ✓';
+              setTimeout(() => { window.location.href = `/messages.php?with=${encodeURIComponent(friend.id)}`; }, 500);
+            } catch (err) {
+              status.textContent = '';
+              btn.disabled = false;
+              console.error('Sohbetle gönderme hatası:', err);
+            }
+          });
+          list.appendChild(btn);
+        });
+        body.innerHTML = '';
+        body.appendChild(list);
+      })
+      .catch((err) => {
+        body.innerHTML = '<p class="share-chat-empty">Arkadaş listesi yüklenemedi.</p>';
+        console.error('Arkadaş listesi hatası:', err);
+      });
+  }
+
   document.addEventListener('click', async (event) => {
     const likeBtn = event.target.closest('.like-btn');
     if (likeBtn) {
@@ -182,27 +259,38 @@
       return;
     }
 
-    const shareBtn = event.target.closest('.share-btn');
-    if (shareBtn) {
-      const card = shareBtn.closest('.post-card');
-      const url = `${window.location.origin}/profile.php?id=${encodeURIComponent(card.dataset.authorId)}#post-${encodeURIComponent(card.dataset.postId)}`;
-      const title = card.dataset.postTitle || 'ProBlog';
-      if (navigator.share) {
-        navigator.share({ title, url }).catch(() => {});
-        return;
-      }
+    const shareCopyBtn = event.target.closest('.share-copy-btn');
+    if (shareCopyBtn) {
+      const card = shareCopyBtn.closest('.post-card');
+      const url = postShareUrl(card);
+      shareCopyBtn.closest('.action-menu-dropdown')?.classList.add('hidden');
       try {
         await navigator.clipboard.writeText(url);
-        const icon = shareBtn.querySelector('.material-symbols-outlined');
-        icon.textContent = 'check';
-        shareBtn.classList.add('text-accent');
-        setTimeout(() => {
-          icon.textContent = 'ios_share';
-          shareBtn.classList.remove('text-accent');
-        }, 1500);
+        const label = shareCopyBtn.lastChild;
+        const original = label.textContent;
+        label.textContent = 'Kopyalandı!';
+        setTimeout(() => { label.textContent = original; }, 1500);
       } catch (err) {
-        console.error('Paylaşma hatası:', err);
+        console.error('Kopyalama hatası:', err);
       }
+      return;
+    }
+
+    const shareNativeBtn = event.target.closest('.share-native-btn');
+    if (shareNativeBtn) {
+      const card = shareNativeBtn.closest('.post-card');
+      shareNativeBtn.closest('.action-menu-dropdown')?.classList.add('hidden');
+      if (navigator.share) {
+        navigator.share({ title: card.dataset.postTitle || 'ProBlog', url: postShareUrl(card) }).catch(() => {});
+      }
+      return;
+    }
+
+    const shareChatBtn = event.target.closest('.share-chat-btn');
+    if (shareChatBtn) {
+      const card = shareChatBtn.closest('.post-card');
+      shareChatBtn.closest('.action-menu-dropdown')?.classList.add('hidden');
+      openShareChatModal(card);
       return;
     }
 
