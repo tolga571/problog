@@ -6,6 +6,7 @@
    regardless of specificity), causing icons to overlap input text. */
 .input-field.pl-11 { padding-left: 2.75rem; }
 .input-field.pr-11 { padding-right: 2.75rem; }
+.input-field.pl-10 { padding-left: 2.5rem; }
 .input-field.pl-8 { padding-left: 2rem; }
 .input-field.rounded-full { border-radius: 9999px; }
 .btn-primary.rounded-full { border-radius: 9999px; }
