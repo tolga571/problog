@@ -1,0 +1,31 @@
+# Logs
+*.log
+
+# Env files
+.env
+php/.env
+
+# PHP runtime/data (SQLite dev db, sessions, error log)
+php/data/*.sqlite
+php/data/*.sqlite-shm
+php/data/*.sqlite-wal
+php/data/sessions/
+php/data/php-error.log
+
+# User-uploaded content (runtime, not source)
+php/uploads/avatars/*
+php/uploads/covers/*
+php/uploads/post-images/*
+!php/uploads/avatars/.gitkeep
+!php/uploads/covers/.gitkeep
+!php/uploads/post-images/.gitkeep
+
+# Legacy Node prototype data (unused, PHP app is the live project)
+/server/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS
+Thumbs.db
+.DS_Store
