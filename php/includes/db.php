@@ -128,6 +128,11 @@ function run_migrations(PDO $pdo): void
         $pdo->exec("ALTER TABLE users ADD COLUMN cover_url TEXT DEFAULT ''");
     }
 
+    if (!column_exists($pdo, 'users', 'username')) {
+        $pdo->exec('ALTER TABLE users ADD COLUMN username TEXT');
+    }
+    $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)');
+
     if (!column_exists($pdo, 'users', 'birth_date')) {
         $pdo->exec('ALTER TABLE users ADD COLUMN birth_date TEXT');
     }

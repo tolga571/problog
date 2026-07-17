@@ -70,10 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $userId = uuid();
+    $username = generate_unique_username($name);
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-    $pdo->prepare('INSERT INTO users (id, name, email, bio, password_hash) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$userId, $name, $email, $bio, $passwordHash]);
+    $pdo->prepare('INSERT INTO users (id, name, username, email, bio, password_hash) VALUES (?, ?, ?, ?, ?, ?)')
+        ->execute([$userId, $name, $username, $email, $bio, $passwordHash]);
 
     login_user($userId);
     redirect('/index.php');

@@ -15,6 +15,9 @@ function render_post_card(array $post, ?string $currentUserId): void
           <a href="/profile.php?id=<?= h($author['id']) ?>" class="font-semibold text-sm hover:text-accent transition-colors">
             <?= h($author['name']) ?>
           </a>
+          <?php if (!empty($author['username'])): ?>
+            <span class="text-muted-2 text-xs">@<?= h($author['username']) ?></span>
+          <?php endif; ?>
           <p class="text-muted-2 text-xs">
             <?= h($author['bio'] ?: 'ProBlog üyesi') ?> &middot; <span title="<?= h(format_date($post['created_at'])) ?>"><?= h(time_ago($post['created_at'])) ?></span>
             <?php if (!empty($post['updated_at'])): ?>
@@ -65,7 +68,9 @@ function render_post_card(array $post, ?string $currentUserId): void
       <?php if (!empty($post['image_path']) && $post['media_type'] === 'video'): ?>
         <video src="<?= h($post['image_path']) ?>" controls preload="metadata" class="w-full rounded-xl mb-4" style="max-height:420px"></video>
       <?php elseif (!empty($post['image_path'])): ?>
-        <img src="<?= h($post['image_path']) ?>" alt="<?= h($post['title'] ?: 'Gönderi görseli') ?>" class="w-full rounded-xl mb-4" style="max-height:420px;object-fit:cover" />
+        <div class="w-full rounded-xl mb-4 overflow-hidden" style="max-height:560px;background:var(--color-surface-3)">
+          <img src="<?= h($post['image_path']) ?>" alt="<?= h($post['title'] ?: 'Gönderi görseli') ?>" class="w-full h-full" style="object-fit:contain;max-height:560px" />
+        </div>
       <?php endif; ?>
 
       <?php if (!empty($post['tags'])): ?>

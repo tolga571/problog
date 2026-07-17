@@ -48,7 +48,7 @@ require __DIR__ . '/includes/layout_head.php';
 
     <div class="p-4 border-b border-border" id="composer">
       <?php $composerOpen = $composerError !== null; ?>
-      <div class="card overflow-hidden" style="border: 1px solid var(--color-border)">
+      <div class="card overflow-hidden" id="composer-card" style="border: 1px solid var(--color-border)">
         <button type="button" id="composer-trigger" class="w-full p-5 flex gap-4 items-center hover:border-accent/50 transition-colors <?= $composerOpen ? 'hidden' : '' ?>" style="text-align:left">
           <?= render_avatar($user) ?>
           <span class="flex-1 text-muted-2 text-lg">Ne düşünüyorsun?</span>
@@ -117,11 +117,14 @@ require __DIR__ . '/includes/layout_head.php';
               maxlength="150"
             />
             <div class="flex items-center justify-between mt-4 pt-4 border-t border-border gap-3">
-              <label class="flex items-center gap-2 text-muted text-sm cursor-pointer hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-xl">perm_media</span>
-                <span>Medya</span>
-                <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" class="hidden" onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'Medya'" />
-              </label>
+              <div class="flex items-center gap-3 media-picker">
+                <label class="flex items-center gap-2 text-muted text-sm cursor-pointer hover:text-white transition-colors">
+                  <span class="material-symbols-outlined text-xl">perm_media</span>
+                  <span class="media-input-label">Medya</span>
+                  <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" class="hidden media-input" />
+                </label>
+                <img class="media-preview hidden" alt="Seçilen görsel" />
+              </div>
               <div class="flex items-center gap-3">
                 <label id="draft-wrap" class="flex items-center gap-1.5 text-muted text-sm cursor-pointer <?= $composerIsArticle ? '' : 'hidden' ?>">
                   <input type="checkbox" name="status" value="draft" />
@@ -136,6 +139,10 @@ require __DIR__ . '/includes/layout_head.php';
           </form>
         </div>
       </div>
+    </div>
+
+    <div id="article-modal" class="confirm-modal-overlay hidden" style="z-index:110">
+      <div class="article-modal-card" id="article-modal-body"></div>
     </div>
 
     <div class="flex border-b border-border px-4">
@@ -194,6 +201,7 @@ require __DIR__ . '/includes/layout_head.php';
     (function () {
       const trigger = document.getElementById('composer-trigger');
       const panel = document.getElementById('composer-panel');
+      const composerCard = document.getElementById('composer-card');
       const closeBtn = document.getElementById('composer-close');
       const postTypeField = document.getElementById('post-type-field');
       const titleField = document.getElementById('title-field');
@@ -205,16 +213,40 @@ require __DIR__ . '/includes/layout_head.php';
       const draftWrap = document.getElementById('draft-wrap');
       const tabPost = document.getElementById('tab-post');
       const tabArticle = document.getElementById('tab-article');
+      const articleModal = document.getElementById('article-modal');
+      const articleModalBody = document.getElementById('article-modal-body');
       if (!trigger || !panel) return;
+
+      // Makale modunda ayni form (ayni node, klonlanmiyor - girilen icerik ve
+      // event listener'lar korunuyor) rahat yazim icin buyuk bir modal'a
+      // tasiniyor; Gonderi moduna donulunce kucuk karta geri tasiniyor.
+      function moveToModal() {
+        if (!articleModal.contains(panel)) {
+          articleModalBody.appendChild(panel);
+        }
+        panel.classList.remove('hidden');
+        composerCard.classList.add('hidden');
+        articleModal.classList.remove('hidden');
+      }
+
+      function moveInline() {
+        if (articleModal.contains(panel)) {
+          composerCard.appendChild(panel);
+        }
+        articleModal.classList.add('hidden');
+        composerCard.classList.remove('hidden');
+      }
 
       function openComposer(mode) {
         trigger.classList.add('hidden');
+        composerCard.classList.remove('hidden');
         panel.classList.remove('hidden');
         setComposerMode(mode || (tabArticle.classList.contains('active') ? 'article' : 'post'));
         (mode === 'article' ? titleField : postContentField)?.focus();
       }
 
       function closeComposer() {
+        moveInline();
         panel.classList.add('hidden');
         trigger.classList.remove('hidden');
       }
@@ -239,12 +271,33 @@ require __DIR__ . '/includes/layout_head.php';
 
         tabPost.classList.toggle('active', !isArticle);
         tabArticle.classList.toggle('active', isArticle);
+
+        if (isArticle) {
+          moveToModal();
+        } else {
+          moveInline();
+        }
       }
 
       trigger.addEventListener('click', () => openComposer('post'));
       closeBtn.addEventListener('click', closeComposer);
       tabPost.addEventListener('click', () => setComposerMode('post'));
       tabArticle.addEventListener('click', () => openComposer('article'));
+      articleModal.addEventListener('click', (event) => {
+        if (event.target === articleModal) setComposerMode('post');
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !articleModal.classList.contains('hidden')) {
+          setComposerMode('post');
+        }
+      });
+
+      // Sayfa dogrulama hatasiyla (composer_error) makale modunda yeniden
+      // aciliyorsa, PHP zaten panel'i gorunur ve tab-article'i aktif render
+      // etmis oluyor - baslangicta da modal'a tasi.
+      if (!panel.classList.contains('hidden') && tabArticle.classList.contains('active')) {
+        moveToModal();
+      }
     })();
   </script>
 

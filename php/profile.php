@@ -175,6 +175,9 @@ require __DIR__ . '/includes/layout_head.php';
         <div class="space-y-3">
           <div>
             <h2 class="text-2xl font-extrabold tracking-tight"><?= h($profile['name']) ?></h2>
+            <?php if (!empty($profile['username'])): ?>
+              <p class="text-muted-2 text-sm">@<?= h($profile['username']) ?></p>
+            <?php endif; ?>
             <p class="text-accent text-sm font-medium uppercase tracking-wide"><?= h($profile['bio'] ?: 'ProBlog yazarı') ?></p>
           </div>
 

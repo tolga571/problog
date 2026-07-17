@@ -6,6 +6,7 @@
    regardless of specificity), causing icons to overlap input text. */
 .input-field.pl-11 { padding-left: 2.75rem; }
 .input-field.pr-11 { padding-right: 2.75rem; }
+.input-field.pl-8 { padding-left: 2rem; }
 .input-field.rounded-full { border-radius: 9999px; }
 .btn-primary.rounded-full { border-radius: 9999px; }
 .btn-outline.rounded-full { border-radius: 9999px; }
@@ -516,6 +517,33 @@ input[type="radio"] {
 .chat-composer-send:hover { background: var(--color-accent-hover); }
 .chat-composer-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Makale composer'i - Gonderi/Makale ayni form node'u, rahat yazim icin
+   Makale secilince neredeyse tam ekran bu modal'a tasinir (bkz. index.php
+   setComposerMode/moveToModal). */
+.article-modal-card {
+  width: 100%;
+  max-width: 960px;
+  max-height: 90vh;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  animation: confirmModalPopIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.article-modal-card .milkdown-editor-shell {
+  min-height: 55vh;
+}
+
+.media-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
 .chat-date-separator {
   text-align: center;
   color: var(--color-muted-2);
@@ -633,6 +661,29 @@ h1, h2, h3, .post-card h2, .prose-content h1, .prose-content h2, .prose-content 
 .sidebar-link.active { color: #c97a4a; background-color: #c97a4a1a; }
 
 .post-interact-btn:hover, .post-interact-btn.text-accent { color: #c97a4a; }
+
+/* Begen/Kaydet aktifken sadece renk degil, belirgin bir "dolu" dolgu +
+   ikonun gercekten dolu (FILL eksen) gorunmesi - glyph degisimi
+   (favorite_border -&gt; favorite) tek basina yeterince belirgin degildi.
+   Dolgu/padding her iki durumda da sabit tutulur ki tiklaninca boyut
+   sicramasin, sadece arkaplan rengi degissin. */
+.like-btn,
+.bookmark-btn,
+.comment-like-btn {
+  border-radius: 999px;
+  padding: 4px 10px;
+  transition: background-color 0.15s, color 0.2s;
+}
+.like-btn.text-accent,
+.bookmark-btn.text-accent,
+.comment-like-btn.text-accent {
+  background: var(--color-accent-glow);
+}
+.like-btn.text-accent .material-symbols-outlined,
+.bookmark-btn.text-accent .material-symbols-outlined,
+.comment-like-btn.text-accent .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1;
+}
 
 .auth-gradient {
   background: radial-gradient(at top, #c97a4a26, transparent 50%),

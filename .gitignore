@@ -16,9 +16,11 @@ php/data/php-error.log
 php/uploads/avatars/*
 php/uploads/covers/*
 php/uploads/post-images/*
+php/uploads/posts/*
 !php/uploads/avatars/.gitkeep
 !php/uploads/covers/.gitkeep
 !php/uploads/post-images/.gitkeep
+!php/uploads/posts/.gitkeep
 
 # Legacy Node prototype data (unused, PHP app is the live project)
 /server/

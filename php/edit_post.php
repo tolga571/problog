@@ -92,11 +92,14 @@ require __DIR__ . '/includes/layout_head.php';
             <p class="text-muted-2 text-xs mt-2">Mevcut medya korunacak, yeni bir dosya seçersen değiştirilir.</p>
           <?php endif; ?>
           <div class="flex items-center justify-between mt-4 pt-4 border-t border-border gap-3">
-            <label class="flex items-center gap-2 text-muted text-sm cursor-pointer hover:text-white transition-colors">
-              <span class="material-symbols-outlined text-xl">perm_media</span>
-              <span>Medya</span>
-              <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" class="hidden" onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'Medya'" />
-            </label>
+            <div class="flex items-center gap-3 media-picker">
+              <label class="flex items-center gap-2 text-muted text-sm cursor-pointer hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-xl">perm_media</span>
+                <span class="media-input-label">Medya</span>
+                <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" class="hidden media-input" />
+              </label>
+              <img class="media-preview hidden" alt="Seçilen görsel" />
+            </div>
             <div class="flex items-center gap-3">
               <a href="/index.php" class="btn-outline text-sm px-5 py-2">Vazgeç</a>
               <button type="submit" class="btn-primary text-sm px-5 py-2">Kaydet</button>

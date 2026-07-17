@@ -288,6 +288,30 @@ function is_new_day(?string $prevCreatedAt, string $currentCreatedAt): bool
     return substr($prevCreatedAt, 0, 10) !== substr($currentCreatedAt, 0, 10);
 }
 
+function generate_unique_username(string $name): string
+{
+    $trMap = [
+        'ı' => 'i', 'İ' => 'i', 'ğ' => 'g', 'Ğ' => 'g', 'ü' => 'u', 'Ü' => 'u',
+        'ş' => 's', 'Ş' => 's', 'ö' => 'o', 'Ö' => 'o', 'ç' => 'c', 'Ç' => 'c',
+    ];
+    $base = strtr(mb_strtolower($name, 'UTF-8'), $trMap);
+    $base = preg_replace('/[^a-z0-9]+/', '', $base) ?? '';
+    $base = mb_substr($base, 0, 20);
+    if ($base === '') {
+        $base = 'kullanici';
+    }
+
+    $stmt = db()->prepare('SELECT id FROM users WHERE username = ?');
+    $username = $base;
+    while (true) {
+        $stmt->execute([$username]);
+        if (!$stmt->fetch()) {
+            return $username;
+        }
+        $username = $base . random_int(100, 9999);
+    }
+}
+
 function normalize_website(string $url): string
 {
     $url = trim($url);
@@ -678,7 +702,7 @@ function post_with_details(array $post, ?string $currentUserId): array
         $userBookmarked = ((int) $stmt->fetchColumn()) > 0;
     }
 
-    $stmt = $pdo->prepare('SELECT id, name, bio, avatar_url FROM users WHERE id = ?');
+    $stmt = $pdo->prepare('SELECT id, name, username, bio, avatar_url FROM users WHERE id = ?');
     $stmt->execute([$post['author_id']]);
     $author = $stmt->fetch();
 

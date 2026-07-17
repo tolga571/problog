@@ -1036,6 +1036,27 @@
     }
   }
 
+  document.addEventListener('change', (event) => {
+    const input = event.target.closest('.media-input');
+    if (!input) return;
+    const picker = input.closest('.media-picker');
+    const label = picker?.querySelector('.media-input-label');
+    const preview = picker?.querySelector('.media-preview');
+    const file = input.files[0];
+
+    if (label) label.textContent = file ? file.name : 'Medya';
+
+    if (preview) {
+      if (file && file.type.startsWith('image/')) {
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove('hidden');
+      } else {
+        preview.classList.add('hidden');
+        preview.removeAttribute('src');
+      }
+    }
+  });
+
   const conversationSearch = document.getElementById('conversation-search');
   if (conversationSearch) {
     conversationSearch.addEventListener('input', () => {

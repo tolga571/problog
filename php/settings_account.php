@@ -37,6 +37,22 @@ require __DIR__ . '/includes/layout_head.php';
       <?php endif; ?>
 
       <div class="card p-5 sm:p-6">
+        <h2 class="font-bold text-sm mb-4">Kullanıcı Adı</h2>
+        <form method="post" action="/actions/update_username.php" class="space-y-3">
+          <?= csrf_field() ?>
+          <div>
+            <label for="username-field" class="block text-sm font-medium text-muted mb-1.5">Kullanıcı adı</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2">@</span>
+              <input id="username-field" class="input-field pl-8" type="text" name="username" value="<?= h($user['username'] ?? '') ?>" placeholder="kullanici_adi" pattern="[a-z0-9_]{3,20}" minlength="3" maxlength="20" autocomplete="off" required />
+            </div>
+            <p class="text-xs text-muted-2 mt-1.5">3-20 karakter, sadece küçük harf, rakam ve alt çizgi.</p>
+          </div>
+          <button type="submit" class="btn-primary text-sm px-5 py-2">Kaydet</button>
+        </form>
+      </div>
+
+      <div class="card p-5 sm:p-6">
         <h2 class="font-bold text-sm mb-4">E-posta Adresi</h2>
         <form method="post" action="/actions/update_email.php" class="space-y-3">
           <?= csrf_field() ?>
