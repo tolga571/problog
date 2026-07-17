@@ -47,22 +47,6 @@ if (IS_PRODUCTION) {
 define('DB_PATH', env('DB_PATH', __DIR__ . '/../data/problog.sqlite'));
 define('APP_NAME', 'ProBlog');
 
-if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
-    // Dedicated session directory instead of the machine-wide default
-    // (php.ini's session.save_path is often a shared folder used by every
-    // local PHP project, which is unnecessary cross-contamination risk).
-    $sessionPath = __DIR__ . '/../data/sessions';
-    if (!is_dir($sessionPath)) {
-        mkdir($sessionPath, 0777, true);
-    }
-    session_save_path($sessionPath);
-
-    session_set_cookie_params([
-        'lifetime' => 60 * 60 * 24 * 7,
-        'path' => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure' => IS_PRODUCTION,
-    ]);
-    session_start();
-}
+// Oturum baslatma includes/db.php'nin sonunda yapiliyor - veritabani
+// destekli oturum handler'i icin once db() baglantisinin hazir olmasi
+// gerekiyor (bkz. includes/session_handler.php).

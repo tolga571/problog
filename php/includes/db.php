@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/session_handler.php';
 
 function db(bool $reset = false): ?PDO
 {
@@ -203,6 +204,13 @@ function run_migrations(PDO $pdo): void
         );
         CREATE INDEX IF NOT EXISTS idx_comment_likes_comment_id ON comment_likes(comment_id);
         CREATE INDEX IF NOT EXISTS idx_comment_likes_user_id ON comment_likes(user_id);
+
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            data TEXT NOT NULL DEFAULT \'\',
+            last_activity INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_sessions_last_activity ON sessions(last_activity);
     ', $pdo));
 }
 
@@ -371,4 +379,16 @@ function uuid(): string
     $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
     $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
+    session_set_save_handler(new DbSessionHandler(db()), true);
+    session_set_cookie_params([
+        'lifetime' => 60 * 60 * 24 * 7,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure' => IS_PRODUCTION,
+    ]);
+    session_start();
 }
