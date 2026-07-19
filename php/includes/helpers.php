@@ -23,8 +23,10 @@ function h(?string $value): string
  */
 function normalize_content(string $text): string
 {
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
     $text = str_replace(["\u{00A0}", "\u{200B}"], '', $text);
     $text = preg_replace('/^\\\\[ \t]*$/m', '', $text) ?? $text;
+    $text = preg_replace('/^\s*<br\s*\/?>\s*$/mi', '', $text) ?? $text;
     $text = preg_replace('/[ \t]+$/m', '', $text) ?? $text;
     $text = preg_replace('/\n{3,}/', "\n\n", $text) ?? $text;
     return trim($text);
@@ -729,4 +731,162 @@ function post_with_details(array $post, ?string $currentUserId): array
         'author' => $author,
         'tags' => $tags,
     ];
+}
+
+const ARTICLE_LANGUAGES = [
+    'tr' => 'Türkçe',
+    'en' => 'İngilizce',
+    'ar' => 'Arapça',
+    'es' => 'İspanyolca',
+    'fr' => 'Fransızca',
+    'ru' => 'Rusça',
+    'ja' => 'Japonca',
+    'zh' => 'Çince',
+];
+
+/**
+ * Bir kaynak metni paragraf ve cümlelere böler. Her cümleye diller arası
+ * eşleştirme için kararlı bir "code" ve gösterim sırası için "sort" atanır.
+ * Bilinen kısaltmalardan (Dr., vb., Prof. ...) sonraki noktada bölünmez.
+ * @return array<int, array{code:string, sort:int, p:int, text:string, note:string}>
+ */
+function split_into_sentences(string $text): array
+{
+    $text = normalize_content($text);
+    if ($text === '') {
+        return [];
+    }
+
+    $abbreviations = ['dr', 'prof', 'doç', 'vs', 'vb', 'örn', 'sn', 'mr', 'mrs', 'ms', 'st', 'no', 'a.g.e', 'a.g.m'];
+    $paragraphs = preg_split('/\n{2,}/', $text) ?: [$text];
+
+    $sentences = [];
+    $index = 0;
+    foreach ($paragraphs as $pIndex => $paragraph) {
+        $paragraph = trim($paragraph);
+        if ($paragraph === '') {
+            continue;
+        }
+
+        $parts = preg_split(
+            '/(?<=[.!?…。！？])\s+(?=[A-ZÇĞİÖŞÜ0-9"«“(\p{Lu}\p{Han}\p{Hiragana}\p{Katakana}]|$)/u',
+            $paragraph
+        ) ?: [$paragraph];
+
+        $buffer = '';
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+            $buffer = $buffer === '' ? $part : $buffer . ' ' . $part;
+
+            $lastWord = '';
+            if (preg_match('/([a-zA-ZçğıöşüÇĞİÖŞÜ.]+)\.$/u', $buffer, $m)) {
+                $lastWord = mb_strtolower(rtrim($m[1], '.'), 'UTF-8');
+            }
+            if ($lastWord !== '' && in_array($lastWord, $abbreviations, true)) {
+                continue;
+            }
+
+            $index++;
+            $sentences[] = ['code' => 's' . $index, 'sort' => $index, 'p' => $pIndex, 'text' => $buffer, 'note' => ''];
+            $buffer = '';
+        }
+
+        if ($buffer !== '') {
+            $index++;
+            $sentences[] = ['code' => 's' . $index, 'sort' => $index, 'p' => $pIndex, 'text' => $buffer, 'note' => ''];
+        }
+    }
+
+    return $sentences;
+}
+
+/** @param array<int, array<string, mixed>> $sentences */
+function renumber_sentences(array $sentences): array
+{
+    $sentences = array_values($sentences);
+    foreach ($sentences as $i => &$sentence) {
+        $sentence['sort'] = $i + 1;
+        $sentence['code'] = (string) ($sentence['code'] ?? ('s' . ($i + 1)));
+        $sentence['p'] = (int) ($sentence['p'] ?? 0);
+        $sentence['text'] = (string) ($sentence['text'] ?? '');
+        $sentence['note'] = (string) ($sentence['note'] ?? '');
+    }
+    unset($sentence);
+    return $sentences;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $sourceSentences
+ * @param array<int, array<string, mixed>> $targetSentences
+ */
+function translation_percent(array $sourceSentences, array $targetSentences): int
+{
+    if (!$sourceSentences) {
+        return 0;
+    }
+
+    $byCode = [];
+    foreach ($targetSentences as $sentence) {
+        $byCode[$sentence['code']] = $sentence;
+    }
+
+    $translated = 0;
+    foreach ($sourceSentences as $sentence) {
+        $match = $byCode[$sentence['code']] ?? null;
+        if ($match && trim(strip_tags((string) ($match['text'] ?? ''))) !== '') {
+            $translated++;
+        }
+    }
+
+    return (int) round($translated / count($sourceSentences) * 100);
+}
+
+/** @param array<int, array<string, mixed>> $sentences */
+function sentences_to_plain_text(array $sentences): string
+{
+    $byParagraph = [];
+    foreach ($sentences as $sentence) {
+        $byParagraph[(int) ($sentence['p'] ?? 0)][] = trim(strip_tags((string) ($sentence['text'] ?? '')));
+    }
+    ksort($byParagraph);
+
+    $paragraphs = array_map(fn(array $texts) => implode(' ', array_filter($texts, fn($t) => $t !== '')), $byParagraph);
+    return implode("\n\n", array_filter($paragraphs, fn($p) => $p !== ''));
+}
+
+function get_article_translation(string $articleId, string $languageId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM article_translations WHERE article_id = ? AND language_id = ?');
+    $stmt->execute([$articleId, $languageId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return null;
+    }
+    $row['sentences'] = json_decode((string) $row['sentences_json'], true) ?: [];
+    return $row;
+}
+
+/** @param array<int, array<string, mixed>> $sentences */
+function save_article_translation(string $articleId, string $languageId, array $sentences, bool $isSource = false): array
+{
+    $sentences = renumber_sentences($sentences);
+    $json = json_encode($sentences, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    $pdo = db();
+    $stmt = $pdo->prepare('SELECT id FROM article_translations WHERE article_id = ? AND language_id = ?');
+    $stmt->execute([$articleId, $languageId]);
+    $existing = $stmt->fetch();
+
+    if ($existing) {
+        $pdo->prepare("UPDATE article_translations SET sentences_json = ?, is_source = ?, updated_at = datetime('now') WHERE id = ?")
+            ->execute([$json, $isSource ? 1 : 0, $existing['id']]);
+    } else {
+        $pdo->prepare('INSERT INTO article_translations (id, article_id, language_id, is_source, sentences_json) VALUES (?, ?, ?, ?, ?)')
+            ->execute([uuid(), $articleId, $languageId, $isSource ? 1 : 0, $json]);
+    }
+
+    return $sentences;
 }
