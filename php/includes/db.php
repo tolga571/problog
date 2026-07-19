@@ -216,30 +216,6 @@ function run_migrations(PDO $pdo): void
             last_activity INTEGER NOT NULL DEFAULT 0
         );
         CREATE INDEX IF NOT EXISTS idx_sessions_last_activity ON sessions(last_activity);
-
-        CREATE TABLE IF NOT EXISTS articles (
-            id TEXT PRIMARY KEY,
-            author_id TEXT NOT NULL,
-            title TEXT NOT NULL,
-            source_language TEXT NOT NULL DEFAULT \'tr\',
-            status TEXT NOT NULL DEFAULT \'draft\',
-            created_at TEXT DEFAULT (datetime(\'now\')),
-            updated_at TEXT,
-            FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-        CREATE INDEX IF NOT EXISTS idx_articles_author_id ON articles(author_id);
-
-        CREATE TABLE IF NOT EXISTS article_translations (
-            id TEXT PRIMARY KEY,
-            article_id TEXT NOT NULL,
-            language_id TEXT NOT NULL,
-            is_source INTEGER NOT NULL DEFAULT 0,
-            sentences_json TEXT NOT NULL DEFAULT \'[]\',
-            updated_at TEXT DEFAULT (datetime(\'now\')),
-            FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
-            UNIQUE(article_id, language_id)
-        );
-        CREATE INDEX IF NOT EXISTS idx_article_translations_article_id ON article_translations(article_id);
     ', $pdo));
 }
 
