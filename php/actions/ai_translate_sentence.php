@@ -35,10 +35,14 @@ $languageName = ARTICLE_LANGUAGES[$targetLanguage];
 $prompt = "Aşağıdaki cümleyi {$languageName} diline çevir. Yalnızca çeviriyi ve varsa kısa bir çevirmen notunu şu JSON formatında döndür: "
     . '{"text":"...","note":"..."}' . "\n\nCümle: \"{$sentence}\"";
 
-$url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . urlencode($apiKey);
+$url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . urlencode($apiKey);
 $payload = json_encode([
     'contents' => [['parts' => [['text' => $prompt]]]],
-    'generationConfig' => ['responseMimeType' => 'application/json'],
+    'generationConfig' => [
+        'responseMimeType' => 'application/json',
+        // "Dusunme" modu bu basit ceviri gorevi icin gereksiz yere yavaslatiyor (10sn+ -> 20sn timeout'u asiyordu).
+        'thinkingConfig' => ['thinkingBudget' => 0],
+    ],
 ]);
 
 $ch = curl_init($url);
@@ -47,7 +51,7 @@ curl_setopt_array($ch, [
     CURLOPT_POST => true,
     CURLOPT_POSTFIELDS => $payload,
     CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    CURLOPT_TIMEOUT => 20,
+    CURLOPT_TIMEOUT => 30,
 ]);
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
