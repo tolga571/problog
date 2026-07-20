@@ -66,4 +66,8 @@ db()->prepare('INSERT INTO posts (id, author_id, title, content, image_path, med
 
 sync_post_tags($postId, $tagsInput);
 
+if ($postType === 'article') {
+    save_post_source_sentences($postId, 'tr', split_into_sentences($content), $title);
+}
+
 redirect('/index.php');

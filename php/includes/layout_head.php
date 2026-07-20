@@ -3,7 +3,9 @@
 /** @var string $pageTitle */
 /** @var string $activePage */
 /** @var bool $useMarkdownEditor */
+/** @var bool $useArticleTranslator */
 $useMarkdownEditor = $useMarkdownEditor ?? false;
+$useArticleTranslator = $useArticleTranslator ?? false;
 ?>
 <!doctype html>
 <html lang="tr" class="dark">
@@ -18,14 +20,40 @@ $useMarkdownEditor = $useMarkdownEditor ?? false;
   <?php if ($useMarkdownEditor): ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@milkdown/crepe@7.21.3/lib/theme/common/style.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@milkdown/crepe@7.21.3/lib/theme/crepe-dark/style.css" />
+  <?php endif; ?>
+  <?php if ($useArticleTranslator): ?>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prosemirror-view@1/style/prosemirror.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prosemirror-menu@1/style/menu.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prosemirror-example-setup@1/style/style.css" />
+  <?php endif; ?>
+  <?php if ($useMarkdownEditor || $useArticleTranslator): ?>
     <script type="importmap">
     {
       "imports": {
-        "@milkdown/crepe": "https://esm.sh/@milkdown/crepe@7.21.3?deps=codemirror@6.0.1"
+        <?php $imports = []; ?>
+        <?php if ($useMarkdownEditor): ?>
+          <?php $imports[] = '"@milkdown/crepe": "https://esm.sh/@milkdown/crepe@7.21.3?deps=codemirror@6.0.1"'; ?>
+        <?php endif; ?>
+        <?php if ($useArticleTranslator): ?>
+          <?php
+            $imports[] = '"prosemirror-state": "https://esm.sh/prosemirror-state@1"';
+            $imports[] = '"prosemirror-view": "https://esm.sh/prosemirror-view@1"';
+            $imports[] = '"prosemirror-model": "https://esm.sh/prosemirror-model@1"';
+            $imports[] = '"prosemirror-schema-basic": "https://esm.sh/prosemirror-schema-basic@1"';
+            $imports[] = '"prosemirror-example-setup": "https://esm.sh/prosemirror-example-setup@1?deps=prosemirror-state@1,prosemirror-view@1,prosemirror-model@1"';
+          ?>
+        <?php endif; ?>
+        <?= implode(",\n        ", $imports) ?>
+
       }
     }
     </script>
+  <?php endif; ?>
+  <?php if ($useMarkdownEditor): ?>
     <script type="module" src="/assets/milkdown-editor.js?v=<?= filemtime(__DIR__ . '/../assets/milkdown-editor.js') ?>"></script>
+  <?php endif; ?>
+  <?php if ($useArticleTranslator): ?>
+    <script type="module" src="/assets/article-translator.js?v=<?= filemtime(__DIR__ . '/../assets/article-translator.js') ?>"></script>
   <?php endif; ?>
   <?php if ($user): ?>
     <meta name="csrf-token" content="<?= h(csrf_token()) ?>" />

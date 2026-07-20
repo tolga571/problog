@@ -23,8 +23,10 @@ function h(?string $value): string
  */
 function normalize_content(string $text): string
 {
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
     $text = str_replace(["\u{00A0}", "\u{200B}"], '', $text);
     $text = preg_replace('/^\\\\[ \t]*$/m', '', $text) ?? $text;
+    $text = preg_replace('/^\s*<br\s*\/?>\s*$/mi', '', $text) ?? $text;
     $text = preg_replace('/[ \t]+$/m', '', $text) ?? $text;
     $text = preg_replace('/\n{3,}/', "\n\n", $text) ?? $text;
     return trim($text);
@@ -729,4 +731,205 @@ function post_with_details(array $post, ?string $currentUserId): array
         'author' => $author,
         'tags' => $tags,
     ];
+}
+
+const ARTICLE_LANGUAGES = [
+    'tr' => 'Türkçe',
+    'en' => 'İngilizce',
+    'ar' => 'Arapça',
+    'es' => 'İspanyolca',
+    'fr' => 'Fransızca',
+    'ru' => 'Rusça',
+    'ja' => 'Japonca',
+    'zh' => 'Çince',
+];
+
+/**
+ * Bir kaynak metni paragraf ve cümlelere böler. Her cümleye diller arası
+ * eşleştirme için kararlı bir "code" ve gösterim sırası için "sort" atanır.
+ * Bilinen kısaltmalardan (Dr., vb., Prof. ...) sonraki noktada bölünmez.
+ * @return array<int, array{code:string, sort:int, p:int, text:string, note:string}>
+ */
+function split_into_sentences(string $text): array
+{
+    $text = normalize_content($text);
+    if ($text === '') {
+        return [];
+    }
+
+    $abbreviations = ['dr', 'prof', 'doç', 'vs', 'vb', 'örn', 'sn', 'mr', 'mrs', 'ms', 'st', 'no', 'a.g.e', 'a.g.m'];
+    $paragraphs = preg_split('/\n{2,}/', $text) ?: [$text];
+
+    $sentences = [];
+    $index = 0;
+    foreach ($paragraphs as $pIndex => $paragraph) {
+        $paragraph = trim($paragraph);
+        if ($paragraph === '') {
+            continue;
+        }
+
+        $parts = preg_split(
+            '/(?<=[.!?…。！？])\s+(?=[A-ZÇĞİÖŞÜ0-9"«“(\p{Lu}\p{Han}\p{Hiragana}\p{Katakana}]|$)/u',
+            $paragraph
+        ) ?: [$paragraph];
+
+        $buffer = '';
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+            $buffer = $buffer === '' ? $part : $buffer . ' ' . $part;
+
+            $lastWord = '';
+            if (preg_match('/([a-zA-ZçğıöşüÇĞİÖŞÜ.]+)\.$/u', $buffer, $m)) {
+                $lastWord = mb_strtolower(rtrim($m[1], '.'), 'UTF-8');
+            }
+            if ($lastWord !== '' && in_array($lastWord, $abbreviations, true)) {
+                continue;
+            }
+
+            $index++;
+            $sentences[] = ['code' => 's' . $index, 'sort' => $index, 'p' => $pIndex, 'text' => $buffer, 'note' => '', 'meta' => new stdClass()];
+            $buffer = '';
+        }
+
+        if ($buffer !== '') {
+            $index++;
+            $sentences[] = ['code' => 's' . $index, 'sort' => $index, 'p' => $pIndex, 'text' => $buffer, 'note' => '', 'meta' => new stdClass()];
+        }
+    }
+
+    return $sentences;
+}
+
+/** @param array<int, array<string, mixed>> $sentences */
+function renumber_sentences(array $sentences): array
+{
+    $sentences = array_values($sentences);
+    foreach ($sentences as $i => &$sentence) {
+        $sentence['sort'] = $i + 1;
+        $sentence['code'] = (string) ($sentence['code'] ?? ('s' . ($i + 1)));
+        $sentence['p'] = (int) ($sentence['p'] ?? 0);
+        $sentence['text'] = (string) ($sentence['text'] ?? '');
+        $sentence['note'] = (string) ($sentence['note'] ?? '');
+        $sentence['meta'] = clean_sentence_meta($sentence['meta'] ?? []);
+    }
+    unset($sentence);
+    return $sentences;
+}
+
+/**
+ * additionalProperties benzeri serbest key-value cift dizisi: sadece string
+ * anahtar/deger kabul eder, bos deger/anahtarlari eler, 20 ciftle sinirlar.
+ * @param mixed $meta
+ */
+function clean_sentence_meta($meta): object
+{
+    $clean = [];
+    if (is_array($meta) || is_object($meta)) {
+        $i = 0;
+        foreach ((array) $meta as $key => $value) {
+            if (++$i > 20) {
+                break;
+            }
+            $key = trim((string) $key);
+            $value = trim((string) $value);
+            if ($key === '' || $value === '') {
+                continue;
+            }
+            $clean[mb_substr($key, 0, 40)] = mb_substr($value, 0, 200);
+        }
+    }
+    return (object) $clean;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $sourceSentences
+ * @param array<int, array<string, mixed>> $targetSentences
+ */
+function translation_percent(array $sourceSentences, array $targetSentences): int
+{
+    if (!$sourceSentences) {
+        return 0;
+    }
+
+    $byCode = [];
+    foreach ($targetSentences as $sentence) {
+        $byCode[$sentence['code']] = $sentence;
+    }
+
+    $translated = 0;
+    foreach ($sourceSentences as $sentence) {
+        $match = $byCode[$sentence['code']] ?? null;
+        if ($match && trim(strip_tags((string) ($match['text'] ?? ''))) !== '') {
+            $translated++;
+        }
+    }
+
+    return (int) round($translated / count($sourceSentences) * 100);
+}
+
+function get_post_translation(string $postId, string $languageId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM post_translations WHERE post_id = ? AND language_id = ?');
+    $stmt->execute([$postId, $languageId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return null;
+    }
+    $row['sentences'] = json_decode((string) $row['sentences_json'], true) ?: [];
+    return $row;
+}
+
+/**
+ * Kaynak dilin cumlelerini kaydeder; ayni koddaki mevcut not/metadata'yi
+ * (varsa) yeni bolunmus cumlelere tasir, boylece icerik duzenlenip
+ * cumleler yeniden bolundugunde cevirmen notlari kaybolmaz.
+ * @param array<int, array<string, mixed>> $sentences
+ */
+function save_post_source_sentences(string $postId, string $languageId, array $sentences, string $title): array
+{
+    $existing = get_post_translation($postId, $languageId);
+    if ($existing) {
+        $notesByText = [];
+        $metaByText = [];
+        foreach ($existing['sentences'] as $s) {
+            $key = trim((string) ($s['text'] ?? ''));
+            $notesByText[$key] = (string) ($s['note'] ?? '');
+            $metaByText[$key] = $s['meta'] ?? new stdClass();
+        }
+        foreach ($sentences as &$s) {
+            $key = trim((string) $s['text']);
+            $s['note'] = $notesByText[$key] ?? '';
+            $s['meta'] = $metaByText[$key] ?? new stdClass();
+        }
+        unset($s);
+    }
+
+    return save_post_translation($postId, $languageId, $sentences, true, $title);
+}
+
+/** @param array<int, array<string, mixed>> $sentences */
+function save_post_translation(string $postId, string $languageId, array $sentences, bool $isSource = false, ?string $title = null): array
+{
+    $sentences = renumber_sentences($sentences);
+    $json = json_encode($sentences, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    $pdo = db();
+    $stmt = $pdo->prepare('SELECT id, title FROM post_translations WHERE post_id = ? AND language_id = ?');
+    $stmt->execute([$postId, $languageId]);
+    $existing = $stmt->fetch();
+
+    $title = $title !== null ? mb_substr(trim($title), 0, 120) : ($existing['title'] ?? '');
+
+    if ($existing) {
+        $pdo->prepare("UPDATE post_translations SET sentences_json = ?, is_source = ?, title = ?, updated_at = datetime('now') WHERE id = ?")
+            ->execute([$json, $isSource ? 1 : 0, $title, $existing['id']]);
+    } else {
+        $pdo->prepare('INSERT INTO post_translations (id, post_id, language_id, is_source, title, sentences_json) VALUES (?, ?, ?, ?, ?, ?)')
+            ->execute([uuid(), $postId, $languageId, $isSource ? 1 : 0, $title, $json]);
+    }
+
+    return $sentences;
 }

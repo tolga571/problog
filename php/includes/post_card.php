@@ -42,6 +42,9 @@ function render_post_card(array $post, ?string $currentUserId): void
                 </form>
               <?php endif; ?>
               <a href="/edit_post.php?id=<?= h($post['id']) ?>">Düzenle</a>
+              <?php if ($post['post_type'] === 'article'): ?>
+                <a href="/translate_article.php?post_id=<?= h($post['id']) ?>">Çevirileri Yönet</a>
+              <?php endif; ?>
               <form method="post" action="/actions/delete_post.php" class="post-delete-form">
                 <?= csrf_field() ?>
                 <input type="hidden" name="post_id" value="<?= h($post['id']) ?>" />
@@ -53,7 +56,12 @@ function render_post_card(array $post, ?string $currentUserId): void
       </div>
 
       <?php if ($post['post_type'] === 'article' && $post['title'] !== ''): ?>
-        <h2 class="text-xl font-bold text-white mb-2 leading-tight"><?= h($post['title']) ?></h2>
+        <div class="flex items-center gap-2 mb-2">
+          <h2 class="text-xl font-bold text-white leading-tight"><?= h($post['title']) ?></h2>
+          <a href="/article.php?post_id=<?= h($post['id']) ?>" class="text-muted-2 hover:text-accent transition-colors flex-shrink-0" title="Diğer dillerde oku">
+            <span class="material-symbols-outlined text-lg">translate</span>
+          </a>
+        </div>
       <?php endif; ?>
       <?php $isLongPost = mb_strlen($post['content']) > 600; ?>
       <div class="post-content-wrapper <?= $isLongPost ? 'clamped' : '' ?> mb-4 <?= $post['post_type'] === 'post' ? 'text-lg' : '' ?>">
