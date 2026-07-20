@@ -47,10 +47,6 @@ class ArticleTranslator {
         <span class="translator-percent text-sm text-muted"></span>
         <div class="flex items-center gap-2">
           <button type="button" class="btn-outline text-xs px-3 py-1.5" data-action="add-sentence">+ Cümle Ekle</button>
-          <button type="button" class="btn-outline text-xs px-3 py-1.5 flex items-center gap-1" data-action="ai-translate-all">
-            <span class="material-symbols-outlined text-sm">auto_awesome</span>
-            Tümünü AI ile Çevir
-          </button>
           <button type="button" class="btn-outline text-xs px-3 py-1.5" data-action="copy-ai">AI için Kopyala</button>
           <button type="button" class="btn-outline text-xs px-3 py-1.5" data-action="toggle-import">JSON Yapıştır</button>
           <button type="button" class="btn-primary text-xs px-4 py-1.5" data-action="save">Kaydet</button>
@@ -74,7 +70,6 @@ class ArticleTranslator {
     this.importTextarea = this.importPanel.querySelector('textarea');
 
     root.querySelector('[data-action="add-sentence"]').addEventListener('click', () => this.addSentenceRow());
-    root.querySelector('[data-action="ai-translate-all"]').addEventListener('click', () => this.translateAllWithAi());
     root.querySelector('[data-action="copy-ai"]').addEventListener('click', () => this.copyForAi());
     root.querySelector('[data-action="toggle-import"]').addEventListener('click', () => this.importPanel.classList.toggle('hidden'));
     root.querySelector('[data-action="import-json"]').addEventListener('click', () => this.importJson());
@@ -118,78 +113,6 @@ class ArticleTranslator {
     this.renderTitle(data.title || '');
     this.updatePercent(data.percent);
     this.status('');
-
-    // Bu dil hic dokunulmamis (hepsi bos): dil sekmesine tiklanir tiklanmaz
-    // dogrudan AI ile toplu ceviriyi otomatik baslat.
-    if (!this.isSource && data.percent === 0 && this.sourceByCode.size > 0) {
-      this.translateAllWithAi(true);
-    }
-  }
-
-  async translateTitleWithAi() {
-    if (this.isSource || this.titleEl.value.trim() !== '' || !this.sourceTitle) return;
-    try {
-      const res = await fetch('/actions/ai_translate_sentence.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken(), 'X-Requested-With': 'fetch' },
-        body: JSON.stringify({ sentence: this.sourceTitle, target_language: this.currentLanguage }),
-      });
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.ok && data.text) {
-        this.titleEl.value = data.text;
-      }
-    } catch (e) {
-      // sessizce gec; kullanici basligi elle girebilir
-    }
-  }
-
-  async translateAllWithAi(auto = false) {
-    if (this.isSource) return;
-
-    const titlePromise = this.translateTitleWithAi();
-
-    const pending = [];
-    this.views.forEach((entry, code) => {
-      const hasText = entry.view ? entry.view.state.doc.textContent.trim() !== '' : false;
-      if (!hasText) {
-        const src = this.sourceByCode.get(code);
-        if (src?.text?.trim()) pending.push({ code, text: src.text });
-      }
-    });
-
-    if (!pending.length) {
-      await titlePromise;
-      if (!auto) this.status('Çevrilecek boş cümle yok.');
-      return;
-    }
-
-    this.status(`AI ile ${pending.length} cümle çevriliyor...`);
-    try {
-      const res = await fetch('/actions/ai_translate_batch.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken(), 'X-Requested-With': 'fetch' },
-        body: JSON.stringify({ sentences: pending, target_language: this.currentLanguage }),
-      });
-      const data = await res.json().catch(() => null);
-      await titlePromise;
-      if (!res.ok || !data?.ok) {
-        this.status(data?.message || 'AI toplu çeviri başarısız oldu, "AI için Kopyala" ile manuel çevirebilirsin.');
-        return;
-      }
-      data.translations.forEach((item) => {
-        const entry = this.views.get(item.code);
-        if (!entry) return;
-        if (entry.view) {
-          const tr = entry.view.state.tr.replaceWith(0, entry.view.state.doc.content.size, htmlToDoc(escapeHtml(item.text || '')).content);
-          entry.view.dispatch(tr);
-        }
-        if (item.note) entry.note.value = item.note;
-      });
-      this.status(`AI ${data.translations.length} cümleyi çevirdi, gözden geçirip Kaydet'e bas.`);
-    } catch (e) {
-      await titlePromise;
-      this.status('AI toplu çeviri sırasında bağlantı hatası.');
-    }
   }
 
   renderTitle(title) {
