@@ -54,12 +54,7 @@ foreach ($sentences as $s) {
 }
 ksort($byParagraph);
 
-$displayTitle = trim((string) ($translation['title'] ?? ''));
-if ($displayTitle === '') {
-    $displayTitle = $article['title'];
-}
-
-$pageTitle = h($displayTitle) . ' - ProBlog';
+$pageTitle = h($article['title']) . ' - ProBlog';
 $activePage = 'articles';
 require __DIR__ . '/includes/layout_head.php';
 ?>
@@ -87,7 +82,7 @@ require __DIR__ . '/includes/layout_head.php';
         <p class="text-xs text-amber-400 mb-4">Bu çeviri %<?= $percent ?> tamamlandı, eksik cümleler kaynak dilde görünmeyebilir.</p>
       <?php endif; ?>
 
-      <h1 class="text-3xl sm:text-4xl font-extrabold mb-4"><?= h($displayTitle) ?></h1>
+      <h1 class="text-3xl sm:text-4xl font-extrabold mb-4"><?= h($article['title']) ?></h1>
 
       <?php if ($author): ?>
         <a href="/profile.php?id=<?= h($author['id']) ?>" class="flex items-center gap-2 mb-8 text-sm text-muted hover:text-white transition-colors">

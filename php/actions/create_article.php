@@ -43,6 +43,6 @@ db()->prepare('INSERT INTO articles (id, author_id, title, source_language, stat
     ->execute([$articleId, $user['id'], $title, $sourceLanguage, $status]);
 
 $sentences = split_into_sentences($content);
-save_article_translation($articleId, $sourceLanguage, $sentences, true, $title);
+save_article_translation($articleId, $sourceLanguage, $sentences, true);
 
 redirect('/edit_article.php?id=' . $articleId);

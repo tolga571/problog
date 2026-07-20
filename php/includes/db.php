@@ -234,7 +234,6 @@ function run_migrations(PDO $pdo): void
             article_id TEXT NOT NULL,
             language_id TEXT NOT NULL,
             is_source INTEGER NOT NULL DEFAULT 0,
-            title TEXT NOT NULL DEFAULT \'\',
             sentences_json TEXT NOT NULL DEFAULT \'[]\',
             updated_at TEXT DEFAULT (datetime(\'now\')),
             FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
@@ -242,10 +241,6 @@ function run_migrations(PDO $pdo): void
         );
         CREATE INDEX IF NOT EXISTS idx_article_translations_article_id ON article_translations(article_id);
     ', $pdo));
-
-    if (!column_exists($pdo, 'article_translations', 'title')) {
-        $pdo->exec("ALTER TABLE article_translations ADD COLUMN title TEXT NOT NULL DEFAULT ''");
-    }
 }
 
 function init_schema(PDO $pdo): void

@@ -52,7 +52,7 @@ foreach ($sentences as &$sentence) {
 }
 unset($sentence);
 
-save_article_translation($articleId, $article['source_language'], $sentences, true, $title);
+save_article_translation($articleId, $article['source_language'], $sentences, true);
 
 flash_set('info', 'Makale güncellendi.');
 redirect('/edit_article.php?id=' . $articleId);
