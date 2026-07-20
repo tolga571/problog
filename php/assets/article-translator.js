@@ -39,6 +39,10 @@ class ArticleTranslator {
 
     this.root.innerHTML = `
       <div class="translator-tabs flex flex-wrap gap-2 mb-4"></div>
+      <div class="translator-title-row card p-3 mb-3">
+        <p class="translator-title-hint text-muted-2 text-xs mb-1.5 italic hidden"></p>
+        <input type="text" class="translator-title w-full bg-transparent border border-border rounded-lg px-3 py-2 text-base font-semibold placeholder:text-muted-2" placeholder="Başlık çevirisi" maxlength="120" />
+      </div>
       <div class="translator-toolbar flex items-center justify-between gap-3 mb-3">
         <span class="translator-percent text-sm text-muted"></span>
         <div class="flex items-center gap-2">
@@ -49,7 +53,7 @@ class ArticleTranslator {
         </div>
       </div>
       <div class="translator-import hidden mb-4">
-        <textarea class="w-full bg-surface-3 border border-border rounded-lg p-3 text-sm" rows="6" placeholder='AI dan donen JSON: [{"code":"s1","text":"..."}]'></textarea>
+        <textarea class="w-full bg-surface-3 border border-border rounded-lg p-3 text-sm" rows="6" placeholder='AI dan donen JSON: {"title":"...","sentences":[{"code":"s1","text":"..."}]}'></textarea>
         <button type="button" class="btn-primary text-xs px-4 py-1.5 mt-2" data-action="import-json">İçe Aktar</button>
       </div>
       <div class="translator-rows flex flex-col gap-3"></div>
@@ -57,6 +61,8 @@ class ArticleTranslator {
     `;
 
     this.tabsEl = root.querySelector('.translator-tabs');
+    this.titleEl = root.querySelector('.translator-title');
+    this.titleHintEl = root.querySelector('.translator-title-hint');
     this.rowsEl = root.querySelector('.translator-rows');
     this.percentEl = root.querySelector('.translator-percent');
     this.statusEl = root.querySelector('.translator-status');
@@ -101,10 +107,24 @@ class ArticleTranslator {
     }
 
     this.isSource = data.is_source;
+    this.sourceTitle = data.source_title || '';
     this.sourceByCode = new Map(data.source_sentences.map((s) => [s.code, s]));
     this.renderRows(data.sentences);
+    this.renderTitle(data.title || '');
     this.updatePercent(data.percent);
     this.status('');
+  }
+
+  renderTitle(title) {
+    this.titleEl.value = title;
+    this.titleEl.readOnly = this.isSource;
+    this.titleEl.classList.toggle('opacity-60', this.isSource);
+    if (!this.isSource) {
+      this.titleHintEl.textContent = this.sourceTitle;
+      this.titleHintEl.classList.remove('hidden');
+    } else {
+      this.titleHintEl.classList.add('hidden');
+    }
   }
 
   renderRows(sentences) {
@@ -232,10 +252,11 @@ class ArticleTranslator {
   async save() {
     this.status('Kaydediliyor...');
     const sentences = this.collectSentences();
+    const title = this.titleEl.value.trim();
     const res = await fetch('/actions/article_translation.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken(), 'X-Requested-With': 'fetch' },
-      body: JSON.stringify({ article_id: this.articleId, language_id: this.currentLanguage, sentences }),
+      body: JSON.stringify({ article_id: this.articleId, language_id: this.currentLanguage, title, sentences }),
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.ok) {
@@ -262,7 +283,7 @@ class ArticleTranslator {
     const lines = [...this.sourceByCode.values()]
       .sort((a, b) => a.sort - b.sort)
       .map((s) => `[${s.code}] ${s.text}` + (s.note ? ` (not: ${s.note})` : ''));
-    const header = `Aşağıdaki cümleleri ${this.languages[this.currentLanguage] || this.currentLanguage} diline çevir. Her cümlenin [code] etiketini koru ve şu formatta JSON döndür: [{"code":"s1","text":"..."}]\n\n`;
+    const header = `Aşağıdaki başlığı ve cümleleri ${this.languages[this.currentLanguage] || this.currentLanguage} diline çevir. Her cümlenin [code] etiketini koru ve şu formatta JSON döndür: {"title":"...","sentences":[{"code":"s1","text":"..."}]}\n\n[title] ${this.sourceTitle}\n`;
     const payload = header + lines.join('\n');
 
     navigator.clipboard?.writeText(payload).then(
@@ -279,12 +300,18 @@ class ArticleTranslator {
       this.status('Geçersiz JSON.');
       return;
     }
-    if (!Array.isArray(parsed)) {
-      this.status('JSON bir dizi (array) olmalı.');
+
+    const sentences = Array.isArray(parsed) ? parsed : parsed?.sentences;
+    if (!Array.isArray(sentences)) {
+      this.status('JSON bir dizi (array) veya {"title":..,"sentences":[..]} biçiminde olmalı.');
       return;
     }
 
-    parsed.forEach((item) => {
+    if (!Array.isArray(parsed) && !this.isSource && typeof parsed.title === 'string') {
+      this.titleEl.value = parsed.title;
+    }
+
+    sentences.forEach((item) => {
       if (!item?.code) return;
       const entry = this.views.get(item.code);
       if (entry?.view) {

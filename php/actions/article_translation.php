@@ -47,6 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         );
     }
 
+    $title = $isSource ? $article['title'] : (string) ($translation['title'] ?? '');
+
     json_response([
         'article_id' => $articleId,
         'language_id' => $languageId,
@@ -54,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'source_language' => $article['source_language'],
         'source_sentences' => $sourceSentences,
         'sentences' => $sentences,
+        'title' => $title,
+        'source_title' => $article['title'],
         'percent' => $isSource ? 100 : translation_percent($sourceSentences, $sentences),
     ]);
 }
@@ -104,10 +108,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $saved = $clean;
     }
 
-    $saved = save_article_translation($articleId, $languageId, $saved, $isSource);
+    $title = $isSource
+        ? $article['title']
+        : mb_substr(trim((string) ($body['title'] ?? '')), 0, 120);
+
+    $saved = save_article_translation($articleId, $languageId, $saved, $isSource, $title);
 
     json_response([
         'ok' => true,
+        'title' => $title,
         'percent' => $isSource ? 100 : translation_percent($sourceSentences, $saved),
     ]);
 }

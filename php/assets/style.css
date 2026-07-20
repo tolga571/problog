@@ -330,6 +330,9 @@ input[type="radio"] {
 }
 .translator-editor .ProseMirror-menubar + .ProseMirror { border-radius: 0 0 8px 8px; }
 .translator-note::placeholder { color: var(--color-muted-2); }
+.translator-title:focus { border-color: var(--color-accent); outline: none; }
+.translator-title.opacity-60 { opacity: 0.6; }
+.translator-title::placeholder { color: var(--color-muted-2); }
 
 /* Uzun gonderileri feed'de kirpma ("Devamini oku") */
 .post-content-wrapper.clamped {

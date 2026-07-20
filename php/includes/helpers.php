@@ -870,22 +870,24 @@ function get_article_translation(string $articleId, string $languageId): ?array
 }
 
 /** @param array<int, array<string, mixed>> $sentences */
-function save_article_translation(string $articleId, string $languageId, array $sentences, bool $isSource = false): array
+function save_article_translation(string $articleId, string $languageId, array $sentences, bool $isSource = false, ?string $title = null): array
 {
     $sentences = renumber_sentences($sentences);
     $json = json_encode($sentences, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     $pdo = db();
-    $stmt = $pdo->prepare('SELECT id FROM article_translations WHERE article_id = ? AND language_id = ?');
+    $stmt = $pdo->prepare('SELECT id, title FROM article_translations WHERE article_id = ? AND language_id = ?');
     $stmt->execute([$articleId, $languageId]);
     $existing = $stmt->fetch();
 
+    $title = $title !== null ? mb_substr(trim($title), 0, 120) : ($existing['title'] ?? '');
+
     if ($existing) {
-        $pdo->prepare("UPDATE article_translations SET sentences_json = ?, is_source = ?, updated_at = datetime('now') WHERE id = ?")
-            ->execute([$json, $isSource ? 1 : 0, $existing['id']]);
+        $pdo->prepare("UPDATE article_translations SET sentences_json = ?, is_source = ?, title = ?, updated_at = datetime('now') WHERE id = ?")
+            ->execute([$json, $isSource ? 1 : 0, $title, $existing['id']]);
     } else {
-        $pdo->prepare('INSERT INTO article_translations (id, article_id, language_id, is_source, sentences_json) VALUES (?, ?, ?, ?, ?)')
-            ->execute([uuid(), $articleId, $languageId, $isSource ? 1 : 0, $json]);
+        $pdo->prepare('INSERT INTO article_translations (id, article_id, language_id, is_source, title, sentences_json) VALUES (?, ?, ?, ?, ?, ?)')
+            ->execute([uuid(), $articleId, $languageId, $isSource ? 1 : 0, $title, $json]);
     }
 
     return $sentences;
