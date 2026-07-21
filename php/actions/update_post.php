@@ -76,9 +76,4 @@ if ($media) {
 
 sync_post_tags($postId, $tagsInput);
 
-if ($postType === 'article') {
-    $sourceLanguage = $post['source_language'] ?: 'tr';
-    save_post_source_sentences($postId, $sourceLanguage, split_into_sentences($content), $title);
-}
-
 redirect('/index.php');

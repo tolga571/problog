@@ -163,10 +163,6 @@ function run_migrations(PDO $pdo): void
         $pdo->exec("ALTER TABLE posts ADD COLUMN post_type TEXT NOT NULL DEFAULT 'article'");
     }
 
-    if (!column_exists($pdo, 'posts', 'source_language')) {
-        $pdo->exec("ALTER TABLE posts ADD COLUMN source_language TEXT NOT NULL DEFAULT 'tr'");
-    }
-
     $pdo->exec(adapt_schema_sql('
         CREATE TABLE IF NOT EXISTS blocks (
             id TEXT PRIMARY KEY,
@@ -220,23 +216,7 @@ function run_migrations(PDO $pdo): void
             last_activity INTEGER NOT NULL DEFAULT 0
         );
         CREATE INDEX IF NOT EXISTS idx_sessions_last_activity ON sessions(last_activity);
-
-        CREATE TABLE IF NOT EXISTS post_translations (
-            id TEXT PRIMARY KEY,
-            post_id TEXT NOT NULL,
-            language_id TEXT NOT NULL,
-            is_source INTEGER NOT NULL DEFAULT 0,
-            title TEXT NOT NULL DEFAULT \'\',
-            sentences_json TEXT NOT NULL DEFAULT \'[]\',
-            updated_at TEXT DEFAULT (datetime(\'now\')),
-            FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-            UNIQUE(post_id, language_id)
-        );
-        CREATE INDEX IF NOT EXISTS idx_post_translations_post_id ON post_translations(post_id);
     ', $pdo));
-
-    $pdo->exec('DROP TABLE IF EXISTS article_translations');
-    $pdo->exec('DROP TABLE IF EXISTS articles');
 }
 
 function init_schema(PDO $pdo): void

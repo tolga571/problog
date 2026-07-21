@@ -21,16 +21,8 @@
 .ml-auto { margin-left: auto; }
 .mt-1 { margin-top: var(--spacing); }
 .mt-1\.5 { margin-top: calc(var(--spacing) * 1.5); }
-.max-w-none { max-width: none; }
-.max-w-\[760px\] { max-width: 760px; }
-.max-w-\[900px\] { max-width: 900px; }
-.text-amber-400 { color: oklch(82.8% .189 84.429); }
-.invisible { visibility: hidden; }
-.opacity-50 { opacity: 0.5; }
 @media (width >= 40rem) {
   .sm\:p-8 { padding: calc(var(--spacing) * 8); }
-  .sm\:p-10 { padding: calc(var(--spacing) * 10); }
-  .sm\:text-4xl { font-size: var(--text-4xl); line-height: var(--text-4xl--line-height); }
 }
 @media (hover: hover) {
   .hover\:border-accent\/50:hover { border-color: #6366f180; }
@@ -304,90 +296,6 @@ input[type="radio"] {
 
 .prose-content img { border-radius: 8px; max-width: 100%; }
 .prose-content .mention-link { color: var(--color-accent); font-weight: 600; }
-
-/* Cok dilli makale çeviri editörü (translate_article.php / article-translator.js) -
-   her cumle icin ayri, minik bir ProseMirror ornegi acilir. */
-.translator-row { align-items: flex-start; }
-.translator-row[draggable="true"] { cursor: grab; }
-.translator-row.opacity-50 { opacity: 0.5; }
-.translator-drag { cursor: grab; padding-top: 4px; }
-.translator-editor .ProseMirror {
-  min-height: 44px;
-  padding: 8px 12px;
-  background: var(--color-surface-3);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-}
-.translator-editor .ProseMirror:focus { border-color: var(--color-accent); }
-.translator-editor.is-readonly p { padding: 8px 12px; color: var(--color-muted); margin: 0; }
-.translator-editor .ProseMirror-menubar {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-}
-.translator-editor .ProseMirror-menubar + .ProseMirror { border-radius: 0 0 8px 8px; }
-.translator-note::placeholder { color: var(--color-muted-2); }
-.translator-title:focus { border-color: var(--color-accent); outline: none; }
-.translator-title.opacity-60 { opacity: 0.6; }
-.translator-title::placeholder { color: var(--color-muted-2); }
-.translator-meta { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); }
-.translator-meta-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.translator-meta-chips:not(:empty) { margin-bottom: 6px; }
-.translator-meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--color-surface-3);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.6875rem;
-  color: var(--color-muted);
-}
-.translator-meta-chip b { color: var(--color-muted-2); font-weight: 600; }
-.translator-meta-chip-remove { color: var(--color-muted-2); cursor: pointer; line-height: 1; }
-.translator-meta-chip-remove:hover { color: #f87171; }
-.translator-meta-form { display: flex; align-items: center; gap: 4px; }
-.translator-meta-key, .translator-meta-val {
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 0.6875rem;
-  color: var(--color-muted);
-  min-width: 0;
-}
-.translator-meta-key { width: 70px; flex-shrink: 0; }
-.translator-meta-val { flex: 1; }
-.translator-meta-key::placeholder, .translator-meta-val::placeholder { color: var(--color-muted-2); }
-.translator-meta-add {
-  color: var(--color-muted-2);
-  font-size: 0.75rem;
-  padding: 2px 6px;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.translator-meta-add:hover { color: var(--color-accent); background: var(--color-surface-3); }
-.translator-ai-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-  color: var(--color-accent);
-  background: color-mix(in oklab, var(--color-accent) 12%, transparent);
-  border: 1px solid color-mix(in oklab, var(--color-accent) 30%, transparent);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.translator-ai-btn:hover { background: color-mix(in oklab, var(--color-accent) 22%, transparent); }
-.translator-ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.translator-ai-status { font-size: 0.6875rem; color: var(--color-muted-2); margin-bottom: 6px; }
 
 /* Uzun gonderileri feed'de kirpma ("Devamini oku") */
 .post-content-wrapper.clamped {
